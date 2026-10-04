@@ -1,0 +1,59 @@
+{#- admin/import.html - bulk import students or teachers from Excel/CSV. -#}
+{% extends "base.html" %}
+{% block title %}Import · {{ app_name }}{% endblock %}
+{% block page_title %}Import {{ kind }}{% endblock %}
+
+{% block content %}
+<nav class="filter-chips" aria-label="What to import">
+  <a href="/admin/import?kind=students" class="filter-chip{% if kind == 'students' %} is-active{% endif %}">Students</a>
+  <a href="/admin/import?kind=teachers" class="filter-chip{% if kind == 'teachers' %} is-active{% endif %}">Teachers</a>
+</nav>
+
+<section class="panel">
+  <ol class="steps">
+    <li><a href="/admin/import/template/{{ kind }}.xlsx">Download the Excel template</a> (or use your own sheet with the same column names).</li>
+    <li>Fill in one {{ kind[:-1] }} per row and save as .xlsx or .csv.</li>
+    <li>Upload it below. Each new person gets a login ID and a one-time password.</li>
+  </ol>
+
+  {% if kind == 'students' %}
+  <div class="table-wrap">
+    <table class="data compact">
+      <thead><tr><th>Column</th><th>Required</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Name</td><td>Yes</td><td>Aarav Sharma</td></tr>
+        <tr><td>Class</td><td>Yes</td><td>Nursery, LKG, UKG, 1 to 12</td></tr>
+        <tr><td>Stream</td><td>No</td><td>Science, Commerce or Arts (Class 11-12)</td></tr>
+        <tr><td>Father's name</td><td>No</td><td>Rakesh Sharma</td></tr>
+        <tr><td>Phone</td><td>No</td><td>9876543210</td></tr>
+        <tr><td>DOB</td><td>No</td><td>2014-05-21 or 21-05-2014</td></tr>
+        <tr><td>Admission year</td><td>No</td><td>{{ academic_year[:4] }} (default: this year)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="table-wrap">
+    <table class="data compact">
+      <thead><tr><th>Column</th><th>Required</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Name</td><td>Yes</td><td>Meera Iyer</td></tr>
+        <tr><td>Phone</td><td>No</td><td>9876500001</td></tr>
+        <tr><td>Email</td><td>No</td><td>meera@example.com</td></tr>
+        <tr><td>Classes</td><td>No</td><td>9, 10 or Nursery, LKG</td></tr>
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <form method="post" action="/admin/import" enctype="multipart/form-data" class="upload-form" data-busy-form>
+    {{ ui.csrf_field(csrf_token) }}
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <label class="sr-only" for="import-file">File</label>
+    <input id="import-file" type="file" name="file" required accept=".xlsx,.csv">
+    <button type="submit" class="btn btn-primary">{{ ui.icon('arrow-up') }}<span>Import {{ kind }}</span></button>
+  </form>
+  <p class="field-hint">Rows with problems are skipped and listed afterwards; the other rows are still imported.</p>
+</section>
+{% endblock %}

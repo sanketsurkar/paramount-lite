@@ -1,0 +1,82 @@
+{#- staff/students.html - student list (teachers: own classes; admin: all + add/import). -#}
+{% extends "base.html" %}
+{% block title %}Students · {{ app_name }}{% endblock %}
+{% block page_title %}Students{% endblock %}
+{% block topbar_actions %}
+{% if current_user.is_admin %}
+<a class="btn btn-ghost btn-small hide-sm" href="/admin/import">Import</a>
+<button type="button" class="btn btn-primary btn-small" data-open-sheet="sheet-add-student">
+  {{ ui.icon('plus') }}<span>Add student</span>
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<form class="toolbar" method="get" action="/staff/students">
+  <label class="sr-only" for="flt-class">Class</label>
+  <select id="flt-class" name="standard" data-autosubmit>
+    <option value="">All my classes</option>
+    {% for code, label in class_options %}
+    <option value="{{ code }}" {% if selected == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <label class="sr-only" for="flt-status">Status</label>
+  <select id="flt-status" name="status" data-autosubmit>
+    {% for value, text in [('active', 'Active'), ('inactive', 'Deactivated'), ('passed_out', 'Passed out'), ('all', 'Everyone')] %}
+    <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ text }}</option>
+    {% endfor %}
+  </select>
+  <label class="sr-only" for="flt-q">Search</label>
+  <input id="flt-q" type="search" name="q" value="{{ q }}" placeholder="Name, ID or phone">
+  <button class="btn btn-ghost" type="submit">Search</button>
+</form>
+
+{% if students %}
+<p class="muted result-count">{{ students|length }} student{{ 's' if students|length != 1 }}</p>
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Name</th><th>Login ID</th><th>Class</th><th class="hide-sm">Phone</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for s in students %}
+      <tr>
+        <td><a class="row-link" href="/staff/students/{{ s.id }}">{{ s.user.full_name }}</a></td>
+        <td class="tabular">{{ s.user.login_id }}</td>
+        <td>{{ standard_label(s.standard) }}{% if s.stream %} <span class="muted">{{ s.stream }}</span>{% endif %}</td>
+        <td class="hide-sm">{{ s.phone or '-' }}</td>
+        <td>
+          {% if not s.user.is_active %}{{ ui.chip('Deactivated', 'bad') }}
+          {% elif s.status == 'passed_out' %}{{ ui.chip('Passed out', 'info') }}
+          {% else %}{{ ui.chip('Active', 'ok') }}{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+{{ ui.empty('No students match. Change the filters' ~ (' or add a student.' if current_user.is_admin else '.'), 'users') }}
+{% endif %}
+{% endblock %}
+
+{% block sheets %}
+{% if current_user.is_admin %}
+{% call ui.sheet('sheet-add-student', 'Add student') %}
+<form method="post" action="/admin/students" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  {{ ui.field('full_name', 'Full name', required=True, extra={'autocomplete': 'off', 'maxlength': '120'}) }}
+  <div class="form-grid">
+    {{ ui.select_field('standard', 'Class', class_options, selected=selected, required=True, id='add-standard') }}
+    {{ ui.stream_field('add-standard', streams, visible=selected in stream_standards, id='add-stream') }}
+  </div>
+  {{ ui.field('father_name', "Father's name", extra={'maxlength': '120'}) }}
+  <div class="form-grid">
+    {{ ui.field('phone', 'Phone', type='tel', extra={'inputmode': 'tel', 'maxlength': '15'}) }}
+    {{ ui.field('dob', 'Date of birth', type='date') }}
+  </div>
+  {{ ui.field('admission_year', 'Admission year', type='number', value=academic_year[:4],
+              hint='Used in the login ID, e.g. TPA26-0001.', extra={'min': '2000', 'max': '2100'}) }}
+  <button type="submit" class="btn btn-primary btn-block">{{ ui.icon('plus') }}<span>Add student</span></button>
+</form>
+{% endcall %}
+{% endif %}
+{% endblock %}

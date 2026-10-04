@@ -1,0 +1,97 @@
+{#- app/templates/admin/dashboard.html - the admin's home page. -#}
+{% extends "base.html" %}
+{% block title %}Dashboard · {{ app_name }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+{# ---- Hero: greeting + fee collection ring ---- #}
+<section class="hero-card">
+  <div class="hero-text">
+    <p class="hero-kicker">Academic year {{ year }}</p>
+    <h2>Here's the academy today</h2>
+    <p class="hero-sub">
+      {% if stats.overdue %}
+        {{ stats.overdue }} fee instalment{{ 's' if stats.overdue != 1 }} overdue
+        &mdash; {{ stats.fee_outstanding|inr }} still to collect.
+      {% elif stats.fee_total %}
+        No overdue fees. {{ stats.fee_outstanding|inr }} still to collect this year.
+      {% else %}
+        No fees set up for this year yet.
+      {% endif %}
+    </p>
+  </div>
+  {{ ui.progress_ring(stats.collected_percent, 'fees collected') }}
+</section>
+
+{# ---- Key numbers ---- #}
+<section class="stat-grid" aria-label="Summary">
+  <a class="stat" href="/staff/students">
+    <span class="stat-icon">{{ ui.icon('users') }}</span>
+    <strong>{{ ui.count_up(stats.students) }}</strong>
+    <span>Active students</span>
+  </a>
+  <a class="stat" href="/admin/teachers">
+    <span class="stat-icon">{{ ui.icon('user') }}</span>
+    <strong>{{ ui.count_up(stats.teachers) }}</strong>
+    <span>Teachers</span>
+  </a>
+  <a class="stat" href="/admin/subjects">
+    <span class="stat-icon">{{ ui.icon('layers') }}</span>
+    <strong>{{ ui.count_up(stats.subjects) }}</strong>
+    <span>Subjects in use</span>
+  </a>
+  <a class="stat" href="/staff/exams">
+    <span class="stat-icon">{{ ui.icon('clipboard') }}</span>
+    <strong>{{ ui.count_up(stats.exams_published) }}<small>/{{ stats.exams_total }}</small></strong>
+    <span>Exams published</span>
+  </a>
+  <a class="stat" href="/admin/fees">
+    <span class="stat-icon">{{ ui.icon('wallet') }}</span>
+    <strong>{{ ui.count_up(stats.fee_paid, 'inr') }}</strong>
+    <span>Collected this year</span>
+  </a>
+  <a class="stat" href="/staff/notices">
+    <span class="stat-icon">{{ ui.icon('megaphone') }}</span>
+    <strong>{{ ui.count_up(stats.notices_active) }}</strong>
+    <span>Live notices</span>
+  </a>
+</section>
+
+<div class="two-col">
+  {# ---- First-time setup: shown until the first student exists ---- #}
+  {% if stats.students == 0 %}
+  <section class="panel">
+    <h3>Set up the academy</h3>
+    <ol class="steps">
+      <li><a href="/admin/settings">Check the academy details and UPI ID</a></li>
+      <li><a href="/admin/teachers">Add teachers and assign their classes</a></li>
+      <li><a href="/staff/students">Add students, or import them from Excel</a></li>
+      <li><a href="/admin/subjects">Review subjects for each class</a></li>
+    </ol>
+  </section>
+  {% endif %}
+
+  {# ---- Recent activity from the audit log ---- #}
+  <section class="panel">
+    <h3>Recent activity</h3>
+    {% if recent_activity %}
+    <ul class="activity">
+      {% for item in recent_activity %}
+      <li>
+        <span class="activity-what">{{ item.action.replace('.', ' ')|capitalize }}</span>
+        <span class="activity-who">{{ item.actor_login_id }}{% if item.entity_id %} &rarr; {{ item.entity_id }}{% endif %}</span>
+        <time datetime="{{ item.at.isoformat() }}Z">{{ item.at|ist }}</time>
+      </li>
+      {% endfor %}
+    </ul>
+    <a class="btn btn-ghost btn-small" href="/admin/audit">Open the full audit log</a>
+    {% else %}
+    <p class="muted">Nothing has happened yet.</p>
+    {% endif %}
+  </section>
+</div>
+
+<p class="page-footnote">
+  <a href="/change-password">Change my password</a>
+</p>
+{% endblock %}

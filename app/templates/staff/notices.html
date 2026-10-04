@@ -1,0 +1,56 @@
+{#- staff/notices.html - post and manage notices. -#}
+{% extends "base.html" %}
+{% block title %}Notices · {{ app_name }}{% endblock %}
+{% block page_title %}Notices{% endblock %}
+{% block topbar_actions %}
+{% if current_user.is_admin or class_options %}
+<button type="button" class="btn btn-primary btn-small" data-open-sheet="sheet-notice">{{ ui.icon('plus') }}<span>Post notice</span></button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if notices %}
+<ul class="notice-cards">
+  {% for n in notices %}
+  {% set expired = n.expires_on and n.expires_on < today %}
+  <li class="panel notice{% if expired %} is-expired{% endif %}">
+    <div class="panel-head">
+      <h3>{{ n.title }}</h3>
+      {% if current_user.is_admin or n.created_by == current_user.id %}
+      <form method="post" action="/staff/notices/{{ n.id }}/delete" data-confirm="Delete this notice?">
+        {{ ui.csrf_field(csrf_token) }}
+        <button class="icon-btn" type="submit" aria-label="Delete notice">{{ ui.icon('x') }}</button>
+      </form>
+      {% endif %}
+    </div>
+    <p class="notice-body">{{ n.body }}</p>
+    <p class="notice-meta">
+      {{ ui.chip(standard_label(n.standard), 'info') }}
+      {% if expired %}{{ ui.chip('Expired', 'bad') }}
+      {% elif n.expires_on %}{{ ui.chip('Until ' ~ (n.expires_on|nice_date)) }}{% endif %}
+      <span class="muted">{{ n.created_at|ist }}</span>
+    </p>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}{{ ui.empty('No notices yet.', 'megaphone') }}{% endif %}
+{% endblock %}
+
+{% block sheets %}
+{% call ui.sheet('sheet-notice', 'Post a notice') %}
+<form method="post" action="/staff/notices" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  {{ ui.field('title', 'Title', required=True, extra={'maxlength': '150'}) }}
+  {{ ui.textarea_field('body', 'Message', rows=5, required=True) }}
+  <div class="form-grid">
+    {% if current_user.is_admin %}
+    {{ ui.select_field('standard', 'Send to', class_options, blank='Everyone') }}
+    {% else %}
+    {{ ui.select_field('standard', 'Send to', class_options, required=True) }}
+    {% endif %}
+    {{ ui.field('expires_on', 'Show until (optional)', type='date') }}
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">{{ ui.icon('megaphone') }}<span>Post notice</span></button>
+</form>
+{% endcall %}
+{% endblock %}

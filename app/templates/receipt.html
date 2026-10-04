@@ -1,0 +1,59 @@
+{#- receipt.html - printable fee receipt (admin or the student). Layout "print". -#}
+{% extends "base.html" %}
+{% block title %}Receipt {{ payment.receipt_no }}{% endblock %}
+
+{% block content %}
+<div class="receipt-actions no-print">
+  <a class="btn btn-ghost" href="{{ back }}">Back</a>
+  <button type="button" class="btn btn-primary" data-action="print">{{ ui.icon('download') }}<span>Print or save as PDF</span></button>
+</div>
+
+<article class="receipt">
+  <header class="receipt-head">
+    <img src="{{ static_url('icons/icon.svg') }}" alt="" width="56" height="56">
+    <div>
+      <h1>{{ info.name }}</h1>
+      <p>{{ info.address }}</p>
+      <p>{{ info.phone }}{% if info.email %}, {{ info.email }}{% endif %}</p>
+    </div>
+  </header>
+
+  <div class="receipt-title">
+    <h2>Fee receipt</h2>
+    <dl>
+      <div><dt>Receipt no.</dt><dd>{{ payment.receipt_no }}</dd></div>
+      <div><dt>Date</dt><dd>{{ payment.paid_on|nice_date }}</dd></div>
+    </dl>
+  </div>
+
+  <dl class="receipt-grid">
+    <div><dt>Student</dt><dd>{{ student.user.full_name }}</dd></div>
+    <div><dt>Login ID</dt><dd>{{ student.user.login_id }}</dd></div>
+    <div><dt>Class</dt><dd>{{ standard_label(student.standard) }}{% if student.stream %} ({{ student.stream }}){% endif %}</dd></div>
+    <div><dt>Father's name</dt><dd>{{ student.father_name or '-' }}</dd></div>
+  </dl>
+
+  <table class="receipt-table">
+    <thead><tr><th>Description</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+      <tr><td>{{ instalment.title }} ({{ instalment.academic_year }})</td><td class="num">{{ payment.amount_paise|inr }}</td></tr>
+    </tbody>
+    <tfoot>
+      <tr><th>Total received</th><th class="num">{{ payment.amount_paise|inr }}</th></tr>
+    </tfoot>
+  </table>
+  <p class="receipt-words">{{ payment.amount_paise|inr_words }}</p>
+
+  <dl class="receipt-grid">
+    <div><dt>Payment method</dt><dd>{{ payment.method }}</dd></div>
+    {% if payment.reference %}<div><dt>Reference</dt><dd>{{ payment.reference }}</dd></div>{% endif %}
+    <div><dt>Balance on this instalment</dt><dd>{{ instalment.balance_paise|inr }}</dd></div>
+    {% if payment.note %}<div><dt>Note</dt><dd>{{ payment.note }}</dd></div>{% endif %}
+  </dl>
+
+  <footer class="receipt-foot">
+    <p>Received by {{ recorded_by.full_name if recorded_by else 'the academy office' }}.</p>
+    <p class="muted">This is a computer-generated receipt and does not need a signature.</p>
+  </footer>
+</article>
+{% endblock %}

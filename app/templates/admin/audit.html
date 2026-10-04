@@ -1,0 +1,43 @@
+{#- admin/audit.html - who changed what, newest first. -#}
+{% extends "base.html" %}
+{% block title %}Audit log · {{ app_name }}{% endblock %}
+{% block page_title %}Audit log{% endblock %}
+
+{% block content %}
+<nav class="filter-chips" aria-label="Filter">
+  {% for value, label in filters %}
+  <a href="/admin/audit{% if value %}?kind={{ value }}{% endif %}" class="filter-chip{% if kind == value %} is-active{% endif %}"
+     {% if kind == value %}aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{% if rows %}
+<div class="table-wrap">
+  <table class="data audit-table">
+    <thead><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      {% set e = r.entry %}
+      <tr>
+        <td class="nowrap">{{ e.at|ist }}</td>
+        <td class="tabular">{{ e.actor_login_id }}</td>
+        <td><strong>{{ e.action.replace('.', ' ').replace('_', ' ')|capitalize }}</strong>
+          {% if e.entity_id %}<br><span class="muted">{{ e.entity }} {{ e.entity_id }}</span>{% endif %}</td>
+        <td class="audit-details">
+          {% for key, value in r.details.items() %}
+          <div><span class="muted">{{ key.replace('_', ' ') }}:</span>
+            {% if value is mapping or (value is iterable and value is not string) %}{{ value|tojson|truncate(300) }}{% else %}{{ value }}{% endif %}</div>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<nav class="pager" aria-label="Pages">
+  {% if page > 1 %}<a class="btn btn-ghost btn-small" href="?{% if kind %}kind={{ kind }}&amp;{% endif %}page={{ page - 1 }}">Newer</a>{% endif %}
+  <span class="muted">Page {{ page }} of {{ pages }}, {{ total }} entries</span>
+  {% if page < pages %}<a class="btn btn-ghost btn-small" href="?{% if kind %}kind={{ kind }}&amp;{% endif %}page={{ page + 1 }}">Older</a>{% endif %}
+</nav>
+{% else %}{{ ui.empty('Nothing recorded yet.', 'shield') }}{% endif %}
+{% endblock %}

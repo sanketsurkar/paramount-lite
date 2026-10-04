@@ -1,0 +1,68 @@
+{#- staff/home.html - a teacher's home page. -#}
+{% extends "base.html" %}
+{% block title %}Home · {{ app_name }}{% endblock %}
+{% block page_title %}Home{% endblock %}
+
+{% block content %}
+<section class="hero-card hero-plain">
+  <div class="hero-text">
+    <p class="hero-kicker">Academic year {{ academic_year }}</p>
+    <h2>Welcome, {{ current_user.full_name }}</h2>
+    <p class="hero-sub">
+      {% if classes %}Your classes: {{ classes|map(attribute='label')|join(', ') }}.
+      {% else %}No classes are assigned to you yet. Ask the admin to assign your classes.{% endif %}
+    </p>
+  </div>
+</section>
+
+{% if classes %}
+<section class="stat-grid" aria-label="Your classes">
+  {% for c in classes %}
+  <a class="stat" href="/staff/students?standard={{ c.code }}">
+    <span class="stat-icon">{{ ui.icon('users') }}</span>
+    <strong>{{ ui.count_up(c.students) }}</strong>
+    <span>{{ c.label }}</span>
+  </a>
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="two-col">
+  <section class="panel">
+    <div class="panel-head">
+      <h3>Recent exams</h3>
+      <a class="btn btn-ghost btn-small" href="/staff/exams">All exams</a>
+    </div>
+    {% if exams %}
+    <ul class="list">
+      {% for e in exams %}
+      <li>
+        <a href="/staff/exams/{{ e.id }}">
+          <strong>{{ e.name }}</strong>
+          <span class="muted">{{ standard_label(e.standard) }}, {{ e.exam_date|nice_date }}</span>
+        </a>
+        {{ ui.chip('Published', 'ok') if e.is_published else ui.chip('Draft') }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}{{ ui.empty('No exams yet. Create one under Exams & marks.', 'clipboard') }}{% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3>Notices</h3>
+      <a class="btn btn-ghost btn-small" href="/staff/notices">Post a notice</a>
+    </div>
+    {% if notices %}
+    <ul class="notice-list">
+      {% for n in notices %}
+      <li><strong>{{ n.title }}</strong><p>{{ n.body|truncate(140) }}</p>
+        <span class="muted">{{ standard_label(n.standard) }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}{{ ui.empty('No live notices.', 'megaphone') }}{% endif %}
+  </section>
+</div>
+
+<p class="page-footnote"><a href="/change-password">Change my password</a></p>
+{% endblock %}

@@ -1,0 +1,35 @@
+{#- student/subject.html - chapters and files: open or save offline. -#}
+{% extends "base.html" %}
+{% block title %}{{ subject.name }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<p class="back-link"><a href="/student/courses">{{ ui.icon('arrow-up', 'icon-left') }}Courses</a></p>
+<div class="page-title subject-title">
+  {{ ui.subject_badge(subject, 'lg') }}
+  <h1>{{ subject.name }}</h1>
+</div>
+
+{% for chapter in subject.chapters %}
+<section class="panel chapter">
+  <h3>{{ chapter.title }}</h3>
+  {% if chapter.contents %}
+  <ul class="file-list">
+    {% for f in chapter.contents %}
+    <li>
+      <span class="file-icon file-{{ f.kind }}" aria-hidden="true">{{ 'PDF' if f.kind == 'pdf' else 'IMG' }}</span>
+      <span class="file-meta"><strong>{{ f.title }}</strong><span class="muted">{{ f.size_bytes|filesize }}</span></span>
+      <a class="btn btn-ghost btn-small" href="/files/{{ f.id }}" target="_blank" rel="noopener">Open</a>
+      <button type="button" class="btn btn-secondary btn-small save-offline" data-action="save-offline"
+              data-url="/files/{{ f.id }}" data-title="{{ f.title }}" data-subject="{{ subject.name }}"
+              data-size="{{ f.size_bytes }}" hidden>
+        {{ ui.icon('download') }}<span>Save offline</span>
+      </button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">Nothing uploaded in this chapter yet.</p>{% endif %}
+</section>
+{% else %}
+{{ ui.empty('Your teachers have not added notes for ' ~ subject.name ~ ' yet.', 'book') }}
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,129 @@
+{#- staff/exam_detail.html - the spreadsheet-style marks grid (autosaves via app.js). -#}
+{% extends "base.html" %}
+{% set locked = exam.is_published %}
+{% block title %}{{ exam.name }} · {{ app_name }}{% endblock %}
+{% block page_title %}{{ exam.name }}{% endblock %}
+
+{% block content %}
+<p class="back-link"><a href="/staff/exams?standard={{ exam.standard }}">{{ ui.icon('arrow-up', 'icon-left') }}Exams for {{ standard_label(exam.standard) }}</a></p>
+
+<section class="panel exam-head">
+  <div>
+    <p class="muted">{{ standard_label(exam.standard) }}, {{ exam.exam_date|nice_date }}, {{ exam.academic_year }}</p>
+    <p>
+      {{ ui.chip('Published', 'ok') if locked else ui.chip('Draft - students can\'t see it yet') }}
+      {% if summary.class_average is not none %}{{ ui.chip('Class average ' ~ (summary.class_average|num) ~ '%', 'info') }}{% endif %}
+    </p>
+  </div>
+  <div class="button-row">
+    {% if not locked %}
+    <button type="button" class="btn btn-ghost btn-small" data-open-sheet="sheet-edit-exam">Edit exam</button>
+    {% endif %}
+    {% if current_user.is_admin %}
+      {% if locked %}
+      <form method="post" action="/staff/exams/{{ exam.id }}/unpublish" data-confirm="Hide these results from students again?">
+        {{ ui.csrf_field(csrf_token) }}<button class="btn btn-ghost btn-small" type="submit">Unpublish</button>
+      </form>
+      {% else %}
+      <form method="post" action="/staff/exams/{{ exam.id }}/publish" data-confirm="Publish results? Students and parents will see them, and marks will be locked.">
+        {{ ui.csrf_field(csrf_token) }}<button class="btn btn-primary btn-small" type="submit">{{ ui.icon('check') }}<span>Publish results</span></button>
+      </form>
+      {% endif %}
+    {% endif %}
+    {% if can_delete %}
+    <form method="post" action="/staff/exams/{{ exam.id }}/delete" data-confirm="Delete this exam and all its marks?">
+      {{ ui.csrf_field(csrf_token) }}<button class="btn btn-danger-ghost btn-small" type="submit">Delete</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+{% if locked %}
+{{ ui.alert('Results are published, so marks are locked.' ~ (' Unpublish to make changes.' if current_user.is_admin else ' Ask the admin to unpublish if a change is needed.'), 'info') }}
+{% else %}
+<p class="grid-help">
+  Type marks, or <strong>AB</strong> for absent. Press <kbd>Enter</kbd> to move down.
+  Changes save automatically. <span class="save-status" data-save-status aria-live="polite"></span>
+</p>
+{% endif %}
+
+{% if summary.rows %}
+<div class="table-wrap marks-wrap">
+  <table class="marks-table" data-marks-grid data-save-url="/staff/exams/{{ exam.id }}/marks"
+         {% if locked %}data-locked{% endif %}>
+    <thead>
+      <tr>
+        <th class="sticky-col" scope="col">Student</th>
+        {% for es in summary.subjects %}
+        <th scope="col">{{ es.subject.icon }} {{ es.subject.name }}<small>out of {{ es.max_marks|num }}</small></th>
+        {% endfor %}
+        <th scope="col" class="num">%</th>
+        <th scope="col" class="num">Rank</th>
+        <th scope="col">Remark</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in summary.rows %}
+      {% set st = row.student %}
+      <tr data-student="{{ st.id }}">
+        <th class="sticky-col" scope="row">{{ st.user.full_name }}<small>{{ st.user.login_id }}{% if st.stream %}, {{ st.stream }}{% endif %}</small></th>
+        {% for es in summary.subjects %}
+        {% if es.subject.stream and es.subject.stream != st.stream %}
+        <td class="cell-na" title="Not in this student's stream">-</td>
+        {% else %}
+        {% set r = row.marks.get(es.subject_id) %}
+        <td><input class="mark-input" inputmode="decimal" autocomplete="off" maxlength="5"
+                   data-subject="{{ es.subject_id }}" data-max="{{ es.max_marks }}"
+                   aria-label="{{ st.user.full_name }}, {{ es.subject.name }}"
+                   value="{% if r %}{{ 'AB' if r.is_absent else (r.marks|num) }}{% endif %}"
+                   {% if locked %}disabled{% endif %}></td>
+        {% endif %}
+        {% endfor %}
+        <td class="num pct" data-pct>{{ row.percent|num if row.percent is not none else '-' }}</td>
+        <td class="num">{{ row.rank or '-' }}</td>
+        <td><input class="remark-input" maxlength="300" value="{{ row.remark or '' }}"
+                   aria-label="Remark for {{ st.user.full_name }}" placeholder="Optional"
+                   {% if locked %}disabled{% endif %}></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th class="sticky-col" scope="row">Class average</th>
+        <td colspan="{{ summary.subjects|length }}"></td>
+        <td class="num" data-class-avg>{{ summary.class_average|num if summary.class_average is not none else '-' }}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+<p class="field-hint">Ranks update when the page is reloaded.</p>
+{% else %}
+{{ ui.empty('No active students in ' ~ standard_label(exam.standard) ~ ' yet.', 'users') }}
+{% endif %}
+{% endblock %}
+
+{% block sheets %}
+{% if not locked %}
+{% call ui.sheet('sheet-edit-exam', 'Edit exam') %}
+<form method="post" action="/staff/exams/{{ exam.id }}/edit" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  {{ ui.field('name', 'Exam name', value=exam.name, required=True, extra={'maxlength': '100'}) }}
+  {{ ui.field('exam_date', 'Date', type='date', value=exam.exam_date.isoformat(), required=True) }}
+  <fieldset class="subject-max">
+    <legend>Subjects and maximum marks</legend>
+    {% for s in class_subjects %}
+    <div class="subject-max-row">
+      <label class="check"><input type="checkbox" name="subject_ids" value="{{ s.id }}"
+             {% if s.id in current_max %}checked{% endif %}>
+        <span>{{ s.icon }} {{ s.name }}{% if s.id in used_subjects %} <small class="muted">(has marks)</small>{% endif %}</span></label>
+      <input type="number" name="max_{{ s.id }}" value="{{ current_max.get(s.id, 100)|num }}" min="1" max="1000" step="0.5"
+             aria-label="Maximum marks for {{ s.name }}">
+    </div>
+    {% endfor %}
+  </fieldset>
+  <button type="submit" class="btn btn-primary btn-block">Save exam</button>
+</form>
+{% endcall %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,143 @@
+{#- admin/subjects.html - subjects of one class: add, edit, reorder, copy, remove, restore. -#}
+{% extends "base.html" %}
+{% block title %}Subjects · {{ app_name }}{% endblock %}
+{% block page_title %}Subjects{% endblock %}
+{% block topbar_actions %}
+<button type="button" class="btn btn-primary btn-small" data-open-sheet="sheet-add-subject">{{ ui.icon('plus') }}<span>Add subject</span></button>
+{% endblock %}
+
+{% block content %}
+<form class="toolbar" method="get" action="/admin/subjects">
+  <label for="subj-class">Class</label>
+  <select id="subj-class" name="standard" data-autosubmit>
+    {% for code, label in class_options %}
+    <option value="{{ code }}" {% if selected == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+{% set active = rows|rejectattr('subject.archived')|list %}
+{% set archived = rows|selectattr('subject.archived')|list %}
+
+<section class="panel">
+  <h3>{{ standard_label(selected) }}</h3>
+  {% if active %}
+  <ul class="subject-rows">
+    {% for item in active %}
+    {% set s = item.subject %}
+    <li>
+      {{ ui.subject_badge(s) }}
+      <span class="subject-info">
+        <strong>{{ s.name }}</strong>
+        <span class="muted">
+          {{ item.usage.notes }} file{{ 's' if item.usage.notes != 1 }}, {{ item.usage.exams }} exam{{ 's' if item.usage.exams != 1 }}
+          {% if s.stream %}, {{ s.stream }} stream only{% endif %}
+        </span>
+      </span>
+      <form method="post" action="/admin/subjects/{{ s.id }}/move">
+        {{ ui.csrf_field(csrf_token) }}<input type="hidden" name="direction" value="up">
+        <button class="icon-btn" type="submit" aria-label="Move {{ s.name }} up" {% if loop.first %}disabled{% endif %}>{{ ui.icon('arrow-up') }}</button>
+      </form>
+      <form method="post" action="/admin/subjects/{{ s.id }}/move">
+        {{ ui.csrf_field(csrf_token) }}<input type="hidden" name="direction" value="down">
+        <button class="icon-btn" type="submit" aria-label="Move {{ s.name }} down" {% if loop.last %}disabled{% endif %}>{{ ui.icon('arrow-up', 'icon-down') }}</button>
+      </form>
+      <button type="button" class="btn btn-ghost btn-small" data-open-sheet="sheet-subject-{{ s.id }}">Manage</button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}{{ ui.empty('No subjects in this class.', 'layers') }}{% endif %}
+</section>
+
+{% if archived %}
+<section class="panel">
+  <h3>Archived</h3>
+  <p class="muted">Hidden from students and new exams. Old results still show them.</p>
+  <ul class="subject-rows">
+    {% for item in archived %}
+    <li>
+      {{ ui.subject_badge(item.subject) }}
+      <span class="subject-info"><strong>{{ item.subject.name }}</strong></span>
+      <form method="post" action="/admin/subjects/{{ item.subject.id }}/restore">
+        {{ ui.csrf_field(csrf_token) }}<button class="btn btn-ghost btn-small" type="submit">Restore</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}
+
+{% macro icon_picker(target) -%}
+<div class="icon-picker" role="group" aria-label="Suggested icons">
+  {% for e in icons %}<button type="button" class="icon-choice" data-action="fill" data-target="{{ target }}" data-value="{{ e }}">{{ e }}</button>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% block sheets %}
+{% call ui.sheet('sheet-add-subject', 'Add subject') %}
+<form method="post" action="/admin/subjects" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  <input type="hidden" name="back" value="{{ selected }}">
+  {{ ui.field('name', 'Subject name', required=True, extra={'maxlength': '60'}) }}
+  <div class="form-grid">
+    {{ ui.field('colour', 'Colour', type='color', value='#1e3a8a') }}
+    {{ ui.field('icon', 'Icon (emoji)', value='📘', extra={'maxlength': '8'}) }}
+  </div>
+  {{ icon_picker('f-icon') }}
+  <fieldset><legend>Add to these classes</legend>{{ ui.class_checkboxes('standards', class_options, [selected]) }}</fieldset>
+  <div class="field">
+    <label for="add-subject-stream">Stream (applies to Class 11-12 only)</label>
+    <select id="add-subject-stream" name="stream">
+      <option value="">All streams</option>
+      {% for s in streams %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">Add subject</button>
+</form>
+{% endcall %}
+
+{% for item in rows if not item.subject.archived %}
+{% set s = item.subject %}
+{% call ui.sheet('sheet-subject-' ~ s.id, s.name) %}
+<form method="post" action="/admin/subjects/{{ s.id }}/edit" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  {{ ui.field('name', 'Subject name', value=s.name, required=True, extra={'maxlength': '60'}, id='sname-' ~ s.id) }}
+  <div class="form-grid">
+    {{ ui.field('colour', 'Colour', type='color', value=s.colour, id='scolour-' ~ s.id) }}
+    <div class="field">
+      <label for="icon-{{ s.id }}">Icon (emoji)</label>
+      <input id="icon-{{ s.id }}" name="icon" value="{{ s.icon }}" maxlength="8">
+    </div>
+  </div>
+  {{ icon_picker('icon-' ~ s.id) }}
+  {% if has_streams %}
+  <div class="field">
+    <label for="stream-{{ s.id }}">Stream</label>
+    <select id="stream-{{ s.id }}" name="stream">
+      <option value="">All streams</option>
+      {% for st in streams %}<option value="{{ st }}" {% if s.stream == st %}selected{% endif %}>{{ st }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <button type="submit" class="btn btn-primary btn-block">Save</button>
+</form>
+
+<details class="sheet-section">
+  <summary>Copy to other classes</summary>
+  <form method="post" action="/admin/subjects/{{ s.id }}/copy" data-busy-form>
+    {{ ui.csrf_field(csrf_token) }}
+    {{ ui.class_checkboxes('standards', class_options|rejectattr(0, 'equalto', selected)|list) }}
+    <button type="submit" class="btn btn-ghost btn-block">Copy {{ s.name }}</button>
+  </form>
+</details>
+
+{% set used = item.usage.notes or item.usage.exams or item.usage.marks %}
+<form class="sheet-footer" method="post" action="/admin/subjects/{{ s.id }}/remove"
+      data-confirm="{{ ('Archive ' ~ s.name ~ '? It has notes or marks, so it will be hidden but kept for old results.') if used else ('Delete ' ~ s.name ~ '?') }}">
+  {{ ui.csrf_field(csrf_token) }}
+  <button type="submit" class="btn btn-danger-ghost btn-block">{{ 'Archive subject' if used else 'Delete subject' }}</button>
+</form>
+{% endcall %}
+{% endfor %}
+{% endblock %}

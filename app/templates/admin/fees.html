@@ -1,0 +1,68 @@
+{#- admin/fees.html - fee overview per student + "instalment for a class". -#}
+{% extends "base.html" %}
+{% block title %}Fees · {{ app_name }}{% endblock %}
+{% block page_title %}Fees{% endblock %}
+{% block topbar_actions %}
+<button type="button" class="btn btn-primary btn-small" data-open-sheet="sheet-class-fee">{{ ui.icon('plus') }}<span>Add instalment</span></button>
+{% endblock %}
+
+{% block content %}
+<form class="toolbar" method="get" action="/admin/fees">
+  <label class="sr-only" for="fee-class">Class</label>
+  <select id="fee-class" name="standard" data-autosubmit>
+    <option value="">All classes</option>
+    {% for code, label in class_options %}<option value="{{ code }}" {% if selected == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="fee-status">Status</label>
+  <select id="fee-status" name="status" data-autosubmit>
+    <option value="">Any status</option>
+    {% for s in statuses %}<option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+</form>
+
+<section class="stat-grid stat-grid-4" aria-label="Totals">
+  <div class="stat"><strong>{{ grand.total|inr }}</strong><span>Billed</span></div>
+  <div class="stat"><strong>{{ grand.paid|inr }}</strong><span>Collected</span></div>
+  <div class="stat"><strong>{{ grand.balance|inr }}</strong><span>Still due</span></div>
+  <div class="stat"><strong>{{ grand.overdue }}</strong><span>Overdue instalments</span></div>
+</section>
+
+{% if rows %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Student</th><th>Class</th><th class="num">Billed</th><th class="num">Paid</th><th class="num">Due</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><a class="row-link" href="/admin/fees/student/{{ r.student.id }}">{{ r.student.user.full_name }}</a><br><span class="muted tabular">{{ r.student.user.login_id }}</span></td>
+        <td>{{ standard_label(r.student.standard) }}</td>
+        <td class="num">{{ r.totals.total|inr }}</td>
+        <td class="num">{{ r.totals.paid|inr }}</td>
+        <td class="num"><strong>{{ r.totals.balance|inr }}</strong></td>
+        <td>{{ ui.fee_chip(r.totals.status) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}{{ ui.empty('No students match these filters.', 'wallet') }}{% endif %}
+{% endblock %}
+
+{% block sheets %}
+{% call ui.sheet('sheet-class-fee', 'Add instalment for a class') %}
+<form method="post" action="/admin/fees/instalments" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  <div class="form-grid">
+    {{ ui.select_field('standard', 'Class', class_options, selected=selected, required=True, id='fee-add-class') }}
+    {{ ui.stream_field('fee-add-class', streams, visible=selected in stream_standards, id='fee-add-stream') }}
+  </div>
+  {{ ui.field('title', 'Title', required=True, hint='For example: Term 1 fee, Admission fee', extra={'maxlength': '80'}) }}
+  <div class="form-grid">
+    {{ ui.field('amount', 'Amount (₹)', type='number', required=True, extra={'min': '1', 'step': '0.01', 'inputmode': 'decimal'}) }}
+    {{ ui.field('due_date', 'Due date', type='date', value=today, required=True) }}
+  </div>
+  <p class="field-hint">Every active student in the class (and stream, if chosen) gets this instalment.</p>
+  <button type="submit" class="btn btn-primary btn-block">Add instalment</button>
+</form>
+{% endcall %}
+{% endblock %}

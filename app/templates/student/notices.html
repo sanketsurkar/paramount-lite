@@ -1,0 +1,20 @@
+{#- student/notices.html - all live notices for the student's class. -#}
+{% extends "base.html" %}
+{% block title %}Notices · {{ app_name }}{% endblock %}
+
+{% block content %}
+<p class="back-link"><a href="/student">{{ ui.icon('arrow-up', 'icon-left') }}Home</a></p>
+<div class="page-title"><h1>Notices</h1></div>
+{% if notices %}
+<ul class="notice-cards">
+  {% for n in notices %}
+  <li class="panel notice">
+    <h4>{{ n.title }}</h4>
+    <p class="notice-body">{{ n.body }}</p>
+    <p class="notice-meta"><span class="muted">{{ n.created_at|ist('%d %b %Y') }}</span>
+      {% if n.expires_on %}<span class="muted">until {{ n.expires_on|nice_date }}</span>{% endif %}</p>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}{{ ui.empty('No notices right now.', 'megaphone') }}{% endif %}
+{% endblock %}

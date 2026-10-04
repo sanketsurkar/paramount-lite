@@ -1,0 +1,254 @@
+{#-
+  app/templates/macros.html
+  Reusable pieces (like Razor partials / tag helpers). Import with:
+      {% import "macros.html" as ui %}
+  then use {{ ui.icon('home') }}, {{ ui.field(...) }} etc.
+-#}
+
+{#- Icon set: simple 24x24 line icons drawn with SVG paths.
+    The strings below are fixed by us (not user input), so |safe is OK. -#}
+{% set ICONS = {
+  'home': '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  'users': '<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M16 4a4 4 0 0 1 0 8"/><path d="M22 21c0-3-2-5-4-6"/>',
+  'user': '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>',
+  'layers': '<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+  'book': '<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 0 2 1h13v-3"/><path d="M9 7h6"/>',
+  'clipboard': '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11h6M9 15h4"/>',
+  'wallet': '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M16 15h.01"/>',
+  'megaphone': '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/>',
+  'arrow-up': '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>',
+  'shield': '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  'settings': '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+  'chart': '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+  'trophy': '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M8 21h8M9 17h6"/>',
+  'sun': '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  'moon': '<path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/>',
+  'menu': '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  'logout': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  'x': '<path d="M18 6L6 18M6 6l12 12"/>',
+  'check': '<path d="M20 6L9 17l-5-5"/>',
+  'alert': '<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>',
+  'info': '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  'download': '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+  'wifi-off': '<path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.5a10 10 0 0 1 5.2-2.8"/><path d="M19 12.5a10 10 0 0 0-2.3-1.7"/><path d="M12 20h.01"/>',
+  'eye': '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off': '<path d="M2 2l20 20"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9"/><path d="M6.6 6.6C3.9 8.4 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  'lock': '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  'plus': '<path d="M12 5v14M5 12h14"/>',
+  'calendar': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  'clock': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  'dot': '<circle cx="12" cy="12" r="3"/>'
+} %}
+
+{% macro icon(name, cls="") -%}
+<svg class="icon{% if cls %} {{ cls }}{% endif %}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ ICONS.get(name, ICONS['dot'])|safe }}</svg>
+{%- endmacro %}
+
+{#- Round badge with initials: "Aarav Sharma" -> "AS" -#}
+{% macro avatar(name, cls="") -%}
+{%- set parts = name.split() -%}
+{%- set initials = (parts[0][0] ~ (parts[-1][0] if parts|length > 1 else '')) if parts else '?' -%}
+<span class="avatar{% if cls %} {{ cls }}{% endif %}" aria-hidden="true">{{ initials|upper }}</span>
+{%- endmacro %}
+
+{#- Light/dark switch. CSS shows the sun in dark mode and the moon in light mode. -#}
+{% macro theme_toggle() -%}
+<button type="button" class="icon-btn theme-toggle" data-action="toggle-theme"
+        aria-label="Switch between light and dark mode" title="Light / dark mode">
+  {{ icon('moon', 'icon-moon') }}{{ icon('sun', 'icon-sun') }}
+</button>
+{%- endmacro %}
+
+{#- Logout is a POST form (with CSRF token), never a plain link. -#}
+{% macro logout_button(token, compact=False) -%}
+<form method="post" action="/logout" class="logout-form" data-logout>
+  <input type="hidden" name="csrf_token" value="{{ token }}">
+  <button type="submit" class="icon-btn" aria-label="Log out" title="Log out">
+    {{ icon('logout') }}
+  </button>
+</form>
+{%- endmacro %}
+
+{#- Hidden CSRF field - put {{ ui.csrf_field(csrf_token) }} in every POST form. -#}
+{% macro csrf_field(token) -%}
+<input type="hidden" name="csrf_token" value="{{ token }}">
+{%- endmacro %}
+
+{#- A labelled input. `extra` adds plain attributes, e.g. {'inputmode': 'numeric'}. -#}
+{% macro field(name, label, type="text", value="", required=False, autocomplete="", hint="", extra={}, id=None) -%}
+{%- set fid = id or ('f-' ~ name) -%}
+<div class="field">
+  <label for="{{ fid }}">{{ label }}</label>
+  <input id="{{ fid }}" name="{{ name }}" type="{{ type }}" value="{{ value }}"
+         {% if required %}required{% endif %}
+         {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+         {% if hint %}aria-describedby="{{ fid }}-hint"{% endif %}
+         {% for k, v in extra.items() %} {{ k }}="{{ v }}"{% endfor %}>
+  {% if hint %}<p class="field-hint" id="{{ fid }}-hint">{{ hint }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{#- Password input with a show/hide button (handled by app.js). -#}
+{% macro password_field(name, label, autocomplete="current-password", hint="", extra={}) -%}
+<div class="field">
+  <label for="f-{{ name }}">{{ label }}</label>
+  <div class="password-wrap">
+    <input id="f-{{ name }}" name="{{ name }}" type="password" required
+           autocomplete="{{ autocomplete }}" autocapitalize="off" spellcheck="false"
+           {% if hint %}aria-describedby="f-{{ name }}-hint"{% endif %}
+           {% for k, v in extra.items() %} {{ k }}="{{ v }}"{% endfor %}>
+    <button type="button" class="password-toggle" data-action="toggle-password"
+            aria-label="Show password" aria-pressed="false">
+      {{ icon('eye', 'icon-show') }}{{ icon('eye-off', 'icon-hide') }}
+    </button>
+  </div>
+  {% if hint %}<p class="field-hint" id="f-{{ name }}-hint">{{ hint }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{#- Error box listing one or more problems. -#}
+{% macro error_list(errors) -%}
+{% if errors %}
+<div class="alert alert-error" role="alert">
+  {{ icon('alert') }}
+  {% if errors|length == 1 %}
+  <p>{{ errors[0] }}</p>
+  {% else %}
+  <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>
+{% endif %}
+{%- endmacro %}
+
+{#- Small info/success box. kind: info | success | error -#}
+{% macro alert(text, kind="info") -%}
+<div class="alert alert-{{ kind }}" role="{{ 'alert' if kind == 'error' else 'status' }}">
+  {{ icon('alert' if kind == 'error' else ('check' if kind == 'success' else 'info')) }}
+  <p>{{ text }}</p>
+</div>
+{%- endmacro %}
+
+{#- Number that counts up on page load. format: "int" or "inr" (value in paise). -#}
+{% macro count_up(value, format="int") -%}
+<span class="count" data-count="{{ value }}" data-format="{{ format }}">
+  {%- if format == 'inr' %}{{ value|inr }}{% else %}{{ value }}{% endif -%}
+</span>
+{%- endmacro %}
+
+{#- Animated progress ring. percent: 0-100. -#}
+{% macro progress_ring(percent, label, size=120) -%}
+{%- set p = [[percent, 0]|max, 100]|min -%}
+<figure class="ring" data-ring data-percent="{{ '%.1f'|format(p) }}">
+  <svg viewBox="0 0 120 120" width="{{ size }}" height="{{ size }}" aria-hidden="true">
+    <circle class="ring-track" cx="60" cy="60" r="52"/>
+    <circle class="ring-value" cx="60" cy="60" r="52" pathLength="100"
+            stroke-dasharray="{{ '%.1f'|format(p) }} 100"/>
+  </svg>
+  <figcaption>
+    <strong>{{ p|round|int }}%</strong>
+    <span>{{ label }}</span>
+  </figcaption>
+</figure>
+{%- endmacro %}
+
+{#- ===================== Added for Phases 2-8 ===================== -#}
+
+{#- Slide-up sheet (dialog) for forms. Open it with data-open-sheet="id".
+    Usage: {% call ui.sheet('sheet-x', 'Title') %} ...form... {% endcall %} -#}
+{% macro sheet(id, title) -%}
+<section class="sheet" id="{{ id }}" role="dialog" aria-modal="true" aria-labelledby="{{ id }}-title" hidden>
+  <div class="sheet-header">
+    <h2 id="{{ id }}-title">{{ title }}</h2>
+    <button type="button" class="icon-btn" data-action="close-sheet" aria-label="Close">{{ icon('x') }}</button>
+  </div>
+  {{ caller() }}
+</section>
+{%- endmacro %}
+
+{#- Small coloured label. kind: ok | warn | bad | info | (blank = neutral) -#}
+{% macro chip(text, kind="") -%}
+<span class="chip{% if kind %} chip-{{ kind }}{% endif %}">{{ text }}</span>
+{%- endmacro %}
+
+{#- Fee status chip: Paid / Partial / Due / Overdue -#}
+{% macro fee_chip(status) -%}
+{%- if status -%}<span class="chip chip-fee-{{ status|lower }}">{{ status }}</span>
+{%- else -%}<span class="chip">No fees</span>{%- endif -%}
+{%- endmacro %}
+
+{#- Drop-down. options = list of (value, text). -#}
+{% macro select_field(name, label, options, selected=None, blank=None, required=False, extra={}, id=None) -%}
+{%- set fid = id or ('f-' ~ name) -%}
+<div class="field">
+  <label for="{{ fid }}">{{ label }}</label>
+  <select id="{{ fid }}" name="{{ name }}" {% if required %}required{% endif %}
+          {% for k, v in extra.items() %} {{ k }}="{{ v }}"{% endfor %}>
+    {% if blank is not none %}<option value="">{{ blank }}</option>{% endif %}
+    {% for value, text in options %}
+    <option value="{{ value }}" {% if selected is not none and value|string == selected|string %}selected{% endif %}>{{ text }}</option>
+    {% endfor %}
+  </select>
+</div>
+{%- endmacro %}
+
+{% macro textarea_field(name, label, value="", rows=4, required=False, maxlength=4000, id=None) -%}
+{%- set fid = id or ('f-' ~ name) -%}
+<div class="field">
+  <label for="{{ fid }}">{{ label }}</label>
+  <textarea id="{{ fid }}" name="{{ name }}" rows="{{ rows }}" maxlength="{{ maxlength }}"
+            {% if required %}required{% endif %}>{{ value }}</textarea>
+</div>
+{%- endmacro %}
+
+{#- A grid of class checkboxes. options = list of (code, label). -#}
+{% macro class_checkboxes(name, options, checked=[]) -%}
+<div class="check-grid">
+  {% for code, label in options %}
+  <label class="check"><input type="checkbox" name="{{ name }}" value="{{ code }}"
+         {% if code in checked %}checked{% endif %}><span>{{ label }}</span></label>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{#- Subject emoji on a tinted square (colour applied by app.js from data-colour). -#}
+{% macro subject_badge(subject, size="") -%}
+<span class="subject-badge{% if size %} subject-badge-{{ size }}{% endif %}" data-colour="{{ subject.colour }}"
+      aria-hidden="true">{{ subject.icon }}</span>
+{%- endmacro %}
+
+{#- Friendly "nothing here yet" block. -#}
+{% macro empty(text, icon_name="info") -%}
+<div class="empty">{{ icon(icon_name) }}<p>{{ text }}</p></div>
+{%- endmacro %}
+
+{#- Stream drop-down that app.js shows only for Class 11-12.
+    `control` is the id of the class <select> it depends on. -#}
+{% macro stream_field(control, streams, selected=None, visible=False, id='f-stream') -%}
+<div class="field" data-stream-for="{{ control }}" {% if not visible %}hidden{% endif %}>
+  <label for="{{ id }}">Stream</label>
+  <select id="{{ id }}" name="stream">
+    <option value="">No stream / common</option>
+    {% for s in streams %}<option value="{{ s }}" {% if s == selected %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+</div>
+{%- endmacro %}
+
+{#- Line chart of % across exams (coordinates computed in services.trend_chart). -#}
+{% macro trend(chart) -%}
+{% if chart %}
+<figure class="trend">
+  <svg viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="Percentage in each exam">
+    {% for g in chart.grid %}
+    <line class="trend-grid" x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ g.y }}" y2="{{ g.y }}"/>
+    <text class="trend-axis" x="{{ chart.left - 8 }}" y="{{ g.y + 4 }}" text-anchor="end">{{ g.label }}</text>
+    {% endfor %}
+    {% if chart.dots|length > 1 %}<polyline class="trend-line" points="{{ chart.points }}"/>{% endif %}
+    {% for d in chart.dots %}
+    <circle class="trend-dot" cx="{{ d.x }}" cy="{{ d.y }}" r="5"><title>{{ d.label }}: {{ d.percent|num }}%</title></circle>
+    <text class="trend-value" x="{{ d.x }}" y="{{ d.y - 11 }}" text-anchor="middle">{{ d.percent|num(0) }}%</text>
+    <text class="trend-axis" x="{{ d.x }}" y="{{ chart.bottom + 22 }}" text-anchor="middle">{{ d.short }}</text>
+    {% endfor %}
+  </svg>
+</figure>
+{% endif %}
+{%- endmacro %}

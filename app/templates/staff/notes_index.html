@@ -1,0 +1,31 @@
+{#- staff/notes_index.html - choose a class, then a subject, to manage notes. -#}
+{% extends "base.html" %}
+{% block title %}Course notes · {{ app_name }}{% endblock %}
+{% block page_title %}Course notes{% endblock %}
+
+{% block content %}
+{% if class_options %}
+<form class="toolbar" method="get" action="/staff/notes">
+  <label for="notes-class">Class</label>
+  <select id="notes-class" name="standard" data-autosubmit>
+    {% for code, label in class_options %}
+    <option value="{{ code }}" {% if selected == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <noscript><button class="btn btn-ghost" type="submit">Show</button></noscript>
+</form>
+
+{% if subjects %}
+<div class="subject-grid">
+  {% for item in subjects %}
+  <a class="subject-card" href="/staff/notes/subject/{{ item.subject.id }}" data-colour="{{ item.subject.colour }}">
+    {{ ui.subject_badge(item.subject, 'lg') }}
+    <strong>{{ item.subject.name }}</strong>
+    <span class="muted">{{ item.chapters }} chapter{{ 's' if item.chapters != 1 }}, {{ item.files }} file{{ 's' if item.files != 1 }}</span>
+    {% if item.subject.stream %}{{ ui.chip(item.subject.stream, 'info') }}{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% else %}{{ ui.empty('This class has no subjects. The admin can add them under Subjects.', 'layers') }}{% endif %}
+{% else %}{{ ui.empty('No classes are assigned to you yet.', 'layers') }}{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{#- staff/exams.html - exam list and the "new exam" sheet. -#}
+{% extends "base.html" %}
+{% block title %}Exams · {{ app_name }}{% endblock %}
+{% block page_title %}Exams & marks{% endblock %}
+{% block topbar_actions %}
+{% if selected is not none and class_subjects %}
+<button type="button" class="btn btn-primary btn-small" data-open-sheet="sheet-new-exam">{{ ui.icon('plus') }}<span>New exam</span></button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<form class="toolbar" method="get" action="/staff/exams">
+  <label for="exam-class">Class</label>
+  <select id="exam-class" name="standard" data-autosubmit>
+    <option value="">All my classes</option>
+    {% for code, label in class_options %}
+    <option value="{{ code }}" {% if selected == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+{% if selected is none %}
+<p class="muted">Choose a class to create a new exam.</p>
+{% elif not class_subjects %}
+{{ ui.alert('This class has no subjects yet, so exams can\'t be created. The admin can add subjects first.', 'info') }}
+{% endif %}
+
+{% if exams %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Exam</th><th>Class</th><th>Date</th><th>Year</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for e in exams %}
+      <tr>
+        <td><a class="row-link" href="/staff/exams/{{ e.id }}">{{ e.name }}</a></td>
+        <td>{{ standard_label(e.standard) }}</td>
+        <td>{{ e.exam_date|nice_date }}</td>
+        <td>{{ e.academic_year }}</td>
+        <td>{{ ui.chip('Published', 'ok') if e.is_published else ui.chip('Draft') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}{{ ui.empty('No exams yet.', 'clipboard') }}{% endif %}
+{% endblock %}
+
+{% block sheets %}
+{% if selected is not none and class_subjects %}
+{% call ui.sheet('sheet-new-exam', 'New exam for ' ~ standard_label(selected)) %}
+<form method="post" action="/staff/exams" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  <input type="hidden" name="standard" value="{{ selected }}">
+  {{ ui.field('name', 'Exam name', required=True, hint='For example: Unit Test 1, Half-yearly', extra={'maxlength': '100'}) }}
+  {{ ui.field('exam_date', 'Date', type='date', value=today, required=True) }}
+  <fieldset class="subject-max">
+    <legend>Subjects and maximum marks</legend>
+    {% for s in class_subjects %}
+    <div class="subject-max-row">
+      <label class="check"><input type="checkbox" name="subject_ids" value="{{ s.id }}" checked>
+        <span>{{ s.icon }} {{ s.name }}{% if s.stream %} <small class="muted">({{ s.stream }})</small>{% endif %}</span></label>
+      <input type="number" name="max_{{ s.id }}" value="100" min="1" max="1000" step="0.5"
+             aria-label="Maximum marks for {{ s.name }}">
+    </div>
+    {% endfor %}
+  </fieldset>
+  <button type="submit" class="btn btn-primary btn-block">Create exam</button>
+</form>
+{% endcall %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{#- student/courses.html - subjects with notes. -#}
+{% extends "base.html" %}
+{% block title %}Courses · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-title">
+  <h1>Courses</h1>
+  <a class="btn btn-ghost btn-small" href="/student/saved">{{ ui.icon('download') }}<span>Saved on this phone</span></a>
+</div>
+{% if cards %}
+<div class="subject-grid">
+  {% for c in cards %}
+  <a class="subject-card" href="/student/courses/{{ c.subject.id }}" data-colour="{{ c.subject.colour }}">
+    {{ ui.subject_badge(c.subject, 'lg') }}
+    <strong>{{ c.subject.name }}</strong>
+    <span class="muted">{{ c.chapters }} chapter{{ 's' if c.chapters != 1 }}, {{ c.files }} file{{ 's' if c.files != 1 }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}{{ ui.empty('No subjects yet.', 'book') }}{% endif %}
+{% endblock %}

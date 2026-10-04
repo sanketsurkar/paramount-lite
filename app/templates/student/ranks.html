@@ -1,0 +1,53 @@
+{#- student/ranks.html - class leaderboard from the latest published exam. -#}
+{% extends "base.html" %}
+{% block title %}Ranks · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-title"><h1>{{ class_label }} ranks</h1></div>
+
+{% if not enabled %}
+{{ ui.empty('The leaderboard is switched off for your class.', 'trophy') }}
+{% elif not board %}
+{{ ui.empty('Ranks appear after the first exam results are published.', 'trophy') }}
+{% else %}
+<p class="muted">From {{ board.exam.name }} ({{ board.exam.exam_date|nice_date }}).
+  {% if board.average is not none %}Class average {{ board.average|num }}%.{% endif %}</p>
+
+{% set podium = top[:3] %}
+<section class="podium" aria-label="Top three">
+  {% for place in [1, 0, 2] %}
+  {% if podium|length > place %}
+  {% set r = podium[place] %}
+  <div class="podium-place podium-{{ place + 1 }}{% if mine and r.student.id == mine.student.id %} is-me{% endif %}">
+    {{ ui.avatar(r.student.user.full_name) }}
+    <strong>{{ r.student.user.short_name }}</strong>
+    <span>{{ r.percent|num }}%</span>
+    <div class="podium-block"><span>{{ r.rank }}</span></div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</section>
+
+{% if top|length > 3 %}
+<ol class="rank-list">
+  {% for r in top[3:] %}
+  <li class="{% if mine and r.student.id == mine.student.id %}is-me{% endif %}">
+    <span class="rank-no">{{ r.rank }}</span>
+    <span class="rank-name">{{ r.student.user.short_name }}</span>
+    <span class="rank-pct">{{ r.percent|num }}%</span>
+  </li>
+  {% endfor %}
+</ol>
+{% endif %}
+
+{% if mine %}
+<section class="panel your-rank">
+  <span>Your rank</span>
+  <strong>{{ mine.rank }}</strong>
+  <span class="muted">of {{ board.ranked|length }}, with {{ mine.percent|num }}%</span>
+</section>
+{% else %}
+<p class="muted">You don't have marks in this exam.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

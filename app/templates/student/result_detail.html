@@ -1,0 +1,46 @@
+{#- student/result_detail.html - one exam: marks per subject, total, rank, remark. -#}
+{% extends "base.html" %}
+{% block title %}{{ exam.name }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<p class="back-link"><a href="/student/results">{{ ui.icon('arrow-up', 'icon-left') }}Results</a></p>
+<section class="hero-card">
+  <div class="hero-text">
+    <p class="hero-kicker">{{ exam.exam_date|nice_date }}</p>
+    <h2>{{ exam.name }}</h2>
+    <p class="hero-sub">{{ row.obtained|num }} out of {{ row.maximum|num }} marks.
+      Rank {{ row.rank }} of {{ summary.ranked_count }}.
+      {% if summary.class_average is not none %}Class average {{ summary.class_average|num }}%.{% endif %}</p>
+  </div>
+  {{ ui.progress_ring(row.percent, 'score', 108) }}
+</section>
+
+<section class="panel">
+  <h3>Subjects</h3>
+  <ul class="marks-list">
+    {% for es in subjects %}
+    {% set r = row.marks.get(es.subject_id) %}
+    <li>
+      {{ ui.subject_badge(es.subject) }}
+      <span class="marks-name">{{ es.subject.name }}</span>
+      {% if r is none %}
+      <span class="marks-value muted">Not entered</span>
+      {% elif r.is_absent %}
+      <span class="marks-value">{{ ui.chip('Absent', 'warn') }}</span>
+      {% else %}
+      <span class="marks-value"><strong>{{ r.marks|num }}</strong>/{{ es.max_marks|num }}</span>
+      <meter class="marks-meter" min="0" max="{{ es.max_marks }}" low="{{ es.max_marks * 0.4 }}"
+             high="{{ es.max_marks * 0.75 }}" optimum="{{ es.max_marks }}" value="{{ r.marks }}">{{ r.marks|num }}</meter>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% if row.remark %}
+<section class="panel remark">
+  <h3>Teacher's remark</h3>
+  <p>{{ row.remark }}</p>
+</section>
+{% endif %}
+{% endblock %}

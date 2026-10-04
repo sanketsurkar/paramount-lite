@@ -1,0 +1,12 @@
+{#- student/saved.html - files saved on this phone (filled in by app.js from the offline cache). -#}
+{% extends "base.html" %}
+{% block title %}Saved files · {{ app_name }}{% endblock %}
+
+{% block content %}
+<p class="back-link"><a href="/student/courses">{{ ui.icon('arrow-up', 'icon-left') }}Courses</a></p>
+<div class="page-title"><h1>Saved on this phone</h1></div>
+<p class="muted">These open even without internet. Logging out removes them from this phone.</p>
+<ul class="file-list panel" id="saved-list" data-saved-list></ul>
+<div id="saved-empty" hidden>{{ ui.empty('Nothing saved yet. Open a subject and tap "Save offline" on a file.', 'download') }}</div>
+<noscript>{{ ui.alert('Saving files for offline use needs JavaScript.', 'info') }}</noscript>
+{% endblock %}

@@ -1,0 +1,36 @@
+{#- app/templates/login.html - one login page for admin, teachers, students and parents. -#}
+{% extends "base.html" %}
+{% block title %}Log in · {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+  <header class="auth-hero">
+    <img src="{{ static_url('icons/icon.svg') }}" alt="" width="56" height="56">
+    <h1>The Paramount Academy</h1>
+    <p>Notes, results and fees in one place.</p>
+  </header>
+
+  <form method="post" action="/login" class="auth-form" data-busy-form novalidate>
+    {{ ui.csrf_field(csrf_token) }}
+    <input type="hidden" name="next" value="{{ next_url }}">
+
+    {% if info %}{{ ui.alert(info, 'success') }}{% endif %}
+    {% if error %}{{ ui.alert(error, 'error') }}{% endif %}
+
+    {{ ui.field('login_id', 'Login ID', value=login_id, required=True, autocomplete='username',
+                hint="Example: TPA26-0001. Parents use their child's ID.",
+                extra={'autocapitalize': 'characters', 'spellcheck': 'false', 'autofocus': 'autofocus',
+                       'maxlength': '20'}) }}
+
+    {{ ui.password_field('password', 'Password', autocomplete='current-password') }}
+
+    <button type="submit" class="btn btn-primary btn-block">
+      {{ ui.icon('lock') }}<span>Log in</span>
+    </button>
+
+    <p class="auth-help">
+      Forgot your password? The academy office can reset it for you.
+    </p>
+  </form>
+</section>
+{% endblock %}

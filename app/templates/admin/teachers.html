@@ -1,0 +1,73 @@
+{#- admin/teachers.html - teacher list, add/edit sheets, password reset, deactivate. -#}
+{% extends "base.html" %}
+{% block title %}Teachers · {{ app_name }}{% endblock %}
+{% block page_title %}Teachers{% endblock %}
+{% block topbar_actions %}
+<a class="btn btn-ghost btn-small hide-sm" href="/admin/import?kind=teachers">Import</a>
+<button type="button" class="btn btn-primary btn-small" data-open-sheet="sheet-add-teacher">{{ ui.icon('plus') }}<span>Add teacher</span></button>
+{% endblock %}
+
+{% block content %}
+{% if teachers %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Name</th><th>Login ID</th><th>Classes</th><th class="hide-sm">Phone</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody>
+      {% for t in teachers %}
+      <tr>
+        <td><strong>{{ t.user.full_name }}</strong>{% if t.email %}<br><span class="muted">{{ t.email }}</span>{% endif %}</td>
+        <td class="tabular">{{ t.user.login_id }}</td>
+        <td>{% for code in t.standard_codes %}{{ ui.chip(standard_label(code)) }} {% else %}<span class="muted">None</span>{% endfor %}</td>
+        <td class="hide-sm">{{ t.phone or '-' }}</td>
+        <td>{{ ui.chip('Active', 'ok') if t.user.is_active else ui.chip('Deactivated', 'bad') }}</td>
+        <td class="actions">
+          <button type="button" class="btn btn-ghost btn-small" data-open-sheet="sheet-teacher-{{ t.id }}">Manage</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}{{ ui.empty('No teachers yet. Add one, or import a list from Excel.', 'user') }}{% endif %}
+{% endblock %}
+
+{% block sheets %}
+{% call ui.sheet('sheet-add-teacher', 'Add teacher') %}
+<form method="post" action="/admin/teachers" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  {{ ui.field('full_name', 'Full name', required=True, extra={'maxlength': '120'}) }}
+  <div class="form-grid">
+    {{ ui.field('phone', 'Phone', type='tel', extra={'inputmode': 'tel'}) }}
+    {{ ui.field('email', 'Email', type='email') }}
+  </div>
+  <fieldset><legend>Classes this teacher can see</legend>{{ ui.class_checkboxes('standards', class_options) }}</fieldset>
+  <button type="submit" class="btn btn-primary btn-block">Add teacher</button>
+</form>
+{% endcall %}
+
+{% for t in teachers %}
+{% call ui.sheet('sheet-teacher-' ~ t.id, t.user.full_name) %}
+<form method="post" action="/admin/teachers/{{ t.id }}/edit" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  {{ ui.field('full_name', 'Full name', value=t.user.full_name, required=True, extra={'maxlength': '120'}, id='tname-' ~ t.id) }}
+  <div class="form-grid">
+    {{ ui.field('phone', 'Phone', type='tel', value=t.phone or '', extra={'inputmode': 'tel'}, id='tphone-' ~ t.id) }}
+    {{ ui.field('email', 'Email', type='email', value=t.email or '', id='temail-' ~ t.id) }}
+  </div>
+  <fieldset><legend>Classes</legend>{{ ui.class_checkboxes('standards', class_options, t.standard_codes) }}</fieldset>
+  <button type="submit" class="btn btn-primary btn-block">Save</button>
+</form>
+<div class="sheet-footer button-row">
+  <form method="post" action="/admin/users/{{ t.user.id }}/reset-password"
+        data-confirm="Give {{ t.user.full_name }} a new one-time password?">
+    {{ ui.csrf_field(csrf_token) }}<button type="submit" class="btn btn-ghost btn-small">{{ ui.icon('lock') }}<span>Reset password</span></button>
+  </form>
+  <form method="post" action="/admin/users/{{ t.user.id }}/toggle-active"
+        data-confirm="{{ 'Deactivate' if t.user.is_active else 'Reactivate' }} {{ t.user.full_name }}?">
+    {{ ui.csrf_field(csrf_token) }}
+    <button type="submit" class="btn btn-small {{ 'btn-danger-ghost' if t.user.is_active else 'btn-ghost' }}">{{ 'Deactivate' if t.user.is_active else 'Reactivate' }}</button>
+  </form>
+</div>
+{% endcall %}
+{% endfor %}
+{% endblock %}

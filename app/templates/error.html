@@ -1,0 +1,21 @@
+{#- app/templates/error.html - shown for 403, 404, 500 etc. (see main.py). -#}
+{% extends "base.html" %}
+{% block title %}{{ title }} · {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="auth-card error-card">
+  <header class="auth-hero auth-hero-compact">
+    <p class="error-code" aria-hidden="true">{{ status_code }}</p>
+    <h1>{{ title }}</h1>
+  </header>
+  <div class="auth-form">
+    <p class="error-message">{{ message }}</p>
+    <div class="button-row">
+      <a class="btn btn-primary" href="/">{{ ui.icon('home') }}<span>Go to my home page</span></a>
+      {% if status_code == 401 or status_code == 403 %}
+      <a class="btn btn-ghost" href="/login">Log in as someone else</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

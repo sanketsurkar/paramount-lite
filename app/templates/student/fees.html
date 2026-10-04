@@ -1,0 +1,66 @@
+{#- student/fees.html - what is due, UPI QR/pay link, receipts. -#}
+{% extends "base.html" %}
+{% block title %}Fees · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-title"><h1>Fees</h1></div>
+
+{% if not instalments %}
+{{ ui.empty('No fees have been added for you yet.', 'wallet') }}
+{% else %}
+<section class="hero-card hero-plain">
+  <div class="hero-text">
+    <p class="hero-kicker">To pay</p>
+    <h2 class="hero-amount">{{ totals.balance|inr }}</h2>
+    <p class="hero-sub">{{ totals.paid|inr }} paid of {{ totals.total|inr }}. {{ ui.fee_chip(totals.status) }}</p>
+  </div>
+</section>
+
+{% if totals.balance > 0 and upi_link %}
+<section class="panel upi">
+  <h3>Pay with UPI</h3>
+  <div class="upi-body">
+    {% if qr %}<div class="qr-box">{{ qr|safe }}</div>{% endif %}
+    <div>
+      <p>Scan the code with any UPI app, or tap the button on your phone.</p>
+      <a class="btn btn-primary" href="{{ upi_link }}">{{ ui.icon('wallet') }}<span>Pay {{ totals.balance|inr }}</span></a>
+      <p class="upi-id">UPI ID: <strong>{{ info.upi_id }}</strong>
+        <button type="button" class="btn btn-link" data-action="copy" data-value="{{ info.upi_id }}">Copy</button></p>
+      <p class="field-hint">After paying, share the UPI reference (UTR) with the office. Your receipt appears here once they record it.</p>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <h3>Instalments</h3>
+  <ul class="fee-cards">
+    {% for i in instalments %}
+    <li class="panel fee-card">
+      <div>
+        <strong>{{ i.title }}</strong>
+        <span class="muted">Due {{ i.due_date|nice_date }}</span>
+      </div>
+      <div class="fee-card-amount">
+        <strong>{{ i.balance_paise|inr if i.balance_paise else i.amount_paise|inr }}</strong>
+        {{ ui.fee_chip(i.status) }}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% if payments %}
+<section class="section">
+  <h3>Receipts</h3>
+  <ul class="list panel">
+    {% for p in payments %}
+    <li><a href="/receipts/{{ p.id }}"><strong>{{ p.receipt_no }}</strong>
+      <span class="muted">{{ p.paid_on|nice_date }}, {{ p.instalment.title }}</span></a>
+      <span>{{ p.amount_paise|inr }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

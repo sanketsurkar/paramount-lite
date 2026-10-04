@@ -1,0 +1,61 @@
+{#- student/home.html - the student's (and parent's) home page. -#}
+{% extends "base.html" %}
+{% set first_name = current_user.full_name.split()[0] %}
+{% block title %}Home · {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="hero-card">
+  <div class="hero-text">
+    <p class="hero-kicker">{{ class_label }}{% if student.stream %}, {{ student.stream }}{% endif %}</p>
+    <h2>Hi, {{ first_name }}</h2>
+    {% if latest %}
+    {% set exam, row, summary = latest %}
+    <p class="hero-sub">{{ exam.name }}: rank {{ row.rank }} of {{ summary.ranked_count }}.
+      <a class="hero-link" href="/student/results/{{ exam.id }}">See marks</a></p>
+    {% else %}
+    <p class="hero-sub">Your results will show here once your teachers publish them.</p>
+    {% endif %}
+  </div>
+  {% if latest %}{{ ui.progress_ring(latest[1].percent, 'latest exam', 108) }}{% endif %}
+</section>
+
+{% if passed_out %}{{ ui.alert('You have passed out of the academy. Your old results stay available here.', 'info') }}{% endif %}
+
+{% if fees.overdue %}
+<a class="alert alert-error alert-link" href="/student/fees">{{ ui.icon('alert') }}
+  <p>{{ fees.overdue }} fee instalment{{ 's' if fees.overdue != 1 }} overdue. {{ fees.balance|inr }} to pay.</p></a>
+{% elif fees.balance > 0 %}
+<a class="alert alert-info alert-link" href="/student/fees">{{ ui.icon('wallet') }}
+  <p>{{ fees.balance|inr }} in fees still to pay.</p></a>
+{% endif %}
+
+{% if subjects %}
+<section class="section">
+  <div class="section-head"><h3>Your subjects</h3><a href="/student/courses">All notes</a></div>
+  <div class="subject-grid subject-grid-compact">
+    {% for s in subjects %}
+    <a class="subject-card" href="/student/courses/{{ s.id }}" data-colour="{{ s.colour }}">
+      {{ ui.subject_badge(s, 'lg') }}<strong>{{ s.name }}</strong>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <div class="section-head"><h3>Notices</h3>{% if notices %}<a href="/student/notices">All notices</a>{% endif %}</div>
+  {% if notices %}
+  <ul class="notice-cards">
+    {% for n in notices %}
+    <li class="panel notice">
+      <h4>{{ n.title }}</h4>
+      <p class="notice-body">{{ n.body|truncate(220) }}</p>
+      <p class="notice-meta"><span class="muted">{{ n.created_at|ist('%d %b %Y') }}</span></p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}{{ ui.empty('No notices right now.', 'megaphone') }}{% endif %}
+</section>
+
+<p class="page-footnote"><a href="/change-password">Change password</a></p>
+{% endblock %}

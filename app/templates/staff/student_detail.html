@@ -1,0 +1,100 @@
+{#- staff/student_detail.html - one student's profile and results. -#}
+{% extends "base.html" %}
+{% set u = student.user %}
+{% block title %}{{ u.full_name }} · {{ app_name }}{% endblock %}
+{% block page_title %}{{ u.full_name }}{% endblock %}
+
+{% block content %}
+<p class="back-link"><a href="/staff/students?standard={{ student.standard }}">{{ ui.icon('arrow-up', 'icon-left') }}Students in {{ standard_label(student.standard) }}</a></p>
+
+<section class="panel profile">
+  <div class="profile-head">
+    {{ ui.avatar(u.full_name, 'avatar-lg') }}
+    <div>
+      <h2>{{ u.full_name }}</h2>
+      <p class="muted">{{ u.login_id }}, {{ standard_label(student.standard) }}{% if student.stream %} ({{ student.stream }}){% endif %}</p>
+      <p>
+        {% if not u.is_active %}{{ ui.chip('Deactivated', 'bad') }}
+        {% elif student.status == 'passed_out' %}{{ ui.chip('Passed out', 'info') }}
+        {% else %}{{ ui.chip('Active', 'ok') }}{% endif %}
+        {% if u.must_change_password %}{{ ui.chip('Has not set a password yet', 'warn') }}{% endif %}
+      </p>
+    </div>
+  </div>
+  <dl class="kv">
+    <div><dt>Father's name</dt><dd>{{ student.father_name or '-' }}</dd></div>
+    <div><dt>Phone</dt><dd>{% if student.phone %}<a href="tel:{{ student.phone }}">{{ student.phone }}</a>{% else %}-{% endif %}</dd></div>
+    <div><dt>Date of birth</dt><dd>{{ student.dob|nice_date }}</dd></div>
+    <div><dt>Admission year</dt><dd>{{ student.admission_year }}</dd></div>
+    <div><dt>Last login</dt><dd>{{ u.last_login_at|ist if u.last_login_at else 'Never' }}</dd></div>
+    {% if fees %}
+    <div><dt>Fees</dt><dd><a href="/admin/fees/student/{{ student.id }}">{{ fees.balance|inr }} due</a> {{ ui.fee_chip(fees.status) }}</dd></div>
+    {% endif %}
+  </dl>
+
+  {% if current_user.is_admin %}
+  <div class="button-row">
+    <button type="button" class="btn btn-ghost btn-small" data-open-sheet="sheet-edit-student">Edit details</button>
+    <a class="btn btn-ghost btn-small" href="/admin/fees/student/{{ student.id }}">{{ ui.icon('wallet') }}<span>Fees</span></a>
+    <form method="post" action="/admin/users/{{ u.id }}/reset-password"
+          data-confirm="Give {{ u.full_name }} a new one-time password? Their current password stops working.">
+      {{ ui.csrf_field(csrf_token) }}
+      <button type="submit" class="btn btn-ghost btn-small">{{ ui.icon('lock') }}<span>Reset password</span></button>
+    </form>
+    <form method="post" action="/admin/users/{{ u.id }}/toggle-active"
+          data-confirm="{{ 'Deactivate' if u.is_active else 'Reactivate' }} {{ u.full_name }}?">
+      {{ ui.csrf_field(csrf_token) }}
+      <button type="submit" class="btn btn-small {{ 'btn-danger-ghost' if u.is_active else 'btn-ghost' }}">
+        {{ 'Deactivate' if u.is_active else 'Reactivate' }}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h3>Results</h3>
+  {% if history %}
+  {{ ui.trend(chart) }}
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Exam</th><th>Date</th><th class="num">Marks</th><th class="num">%</th><th class="num">Rank</th></tr></thead>
+      <tbody>
+        {% for exam, row, summary in history %}
+        <tr>
+          <td><a href="/staff/exams/{{ exam.id }}">{{ exam.name }}</a></td>
+          <td>{{ exam.exam_date|nice_date }}</td>
+          <td class="num">{{ row.obtained|num }}/{{ row.maximum|num }}</td>
+          <td class="num"><strong>{{ row.percent|num }}</strong></td>
+          <td class="num">{{ row.rank }} of {{ summary.ranked_count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ ui.empty('No published results yet.', 'chart') }}{% endif %}
+</section>
+{% endblock %}
+
+{% block sheets %}
+{% if current_user.is_admin %}
+{% call ui.sheet('sheet-edit-student', 'Edit student') %}
+<form method="post" action="/admin/students/{{ student.id }}/edit" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  {{ ui.field('full_name', 'Full name', value=u.full_name, required=True, extra={'maxlength': '120'}) }}
+  <div class="form-grid">
+    {{ ui.select_field('standard', 'Class', class_options, selected=student.standard, required=True, id='edit-standard') }}
+    {{ ui.stream_field('edit-standard', streams, selected=student.stream,
+                       visible=student.standard in stream_standards, id='edit-stream') }}
+  </div>
+  {{ ui.field('father_name', "Father's name", value=student.father_name or '', extra={'maxlength': '120'}) }}
+  <div class="form-grid">
+    {{ ui.field('phone', 'Phone', type='tel', value=student.phone or '', extra={'inputmode': 'tel'}) }}
+    {{ ui.field('dob', 'Date of birth', type='date', value=student.dob.isoformat() if student.dob else '') }}
+  </div>
+  <p class="field-hint">The login ID ({{ u.login_id }}) never changes.</p>
+  <button type="submit" class="btn btn-primary btn-block">Save changes</button>
+</form>
+{% endcall %}
+{% endif %}
+{% endblock %}

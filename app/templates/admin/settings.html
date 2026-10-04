@@ -1,0 +1,47 @@
+{#- admin/settings.html - academy details, UPI, leaderboards. -#}
+{% extends "base.html" %}
+{% block title %}Settings · {{ app_name }}{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<form method="post" action="/admin/settings" class="settings-form" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  <section class="panel">
+    <h3>Academy details</h3>
+    <p class="muted">Printed on receipts.</p>
+    {{ ui.field('name', 'Academy name', value=info.name, required=True, extra={'maxlength': '120'}) }}
+    {{ ui.field('tagline', 'Tagline', value=info.tagline, extra={'maxlength': '120'}) }}
+    {{ ui.field('address', 'Address', value=info.address, extra={'maxlength': '250'}) }}
+    <div class="form-grid">
+      {{ ui.field('phone', 'Phone', value=info.phone, type='tel', extra={'maxlength': '40'}) }}
+      {{ ui.field('email', 'Email', value=info.email, type='email', extra={'maxlength': '120'}) }}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>UPI payments</h3>
+    <p class="muted">Students see a QR code and a "Pay with UPI" button for the amount they owe.</p>
+    <div class="form-grid">
+      {{ ui.field('upi_id', 'UPI ID', value=info.upi_id, hint='For example: paramountacademy@okhdfcbank', extra={'maxlength': '80'}) }}
+      {{ ui.field('upi_payee', 'Payee name', value=info.upi_payee, extra={'maxlength': '80'}) }}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>Leaderboards</h3>
+    <p class="muted">Students in ticked classes see the class ranking from the latest published exam.</p>
+    <div class="check-grid">
+      {% for code, label, on in boards %}
+      <label class="check"><input type="checkbox" name="leaderboard" value="{{ code }}" {% if on %}checked{% endif %}><span>{{ label }}</span></label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>Academic year</h3>
+    <p>The current academic year is <strong>{{ year }}</strong> (April to March). New exams and fees use it automatically.</p>
+  </section>
+
+  <button type="submit" class="btn btn-primary">{{ ui.icon('check') }}<span>Save settings</span></button>
+</form>
+{% endblock %}

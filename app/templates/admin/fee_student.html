@@ -1,0 +1,130 @@
+{#- admin/fee_student.html - one student's instalments, payments and receipts. -#}
+{% extends "base.html" %}
+{% set u = student.user %}
+{% block title %}Fees: {{ u.full_name }} · {{ app_name }}{% endblock %}
+{% block page_title %}Fees: {{ u.full_name }}{% endblock %}
+{% block topbar_actions %}
+<button type="button" class="btn btn-ghost btn-small" data-open-sheet="sheet-student-fee">{{ ui.icon('plus') }}<span>Add instalment</span></button>
+{% endblock %}
+
+{% block content %}
+<p class="back-link"><a href="/admin/fees?standard={{ student.standard }}">{{ ui.icon('arrow-up', 'icon-left') }}Fees for {{ standard_label(student.standard) }}</a></p>
+
+<section class="panel profile-head">
+  {{ ui.avatar(u.full_name, 'avatar-lg') }}
+  <div>
+    <h2><a href="/staff/students/{{ student.id }}">{{ u.full_name }}</a></h2>
+    <p class="muted">{{ u.login_id }}, {{ standard_label(student.standard) }}</p>
+  </div>
+  <div class="fee-total">
+    <strong>{{ totals.balance|inr }}</strong><span>due</span> {{ ui.fee_chip(totals.status) }}
+  </div>
+</section>
+
+<section class="panel">
+  <h3>Instalments</h3>
+  {% if instalments %}
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Title</th><th>Due</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        {% for i in instalments %}
+        <tr>
+          <td>{{ i.title }}<br><span class="muted">{{ i.academic_year }}</span></td>
+          <td>{{ i.due_date|nice_date }}</td>
+          <td class="num">{{ i.amount_paise|inr }}</td>
+          <td class="num">{{ i.paid_amount_paise|inr }}</td>
+          <td class="num"><strong>{{ i.balance_paise|inr }}</strong></td>
+          <td>{{ ui.fee_chip(i.status) }}</td>
+          <td class="actions">
+            {% if i.balance_paise > 0 %}
+            <button type="button" class="btn btn-primary btn-small" data-open-sheet="sheet-pay-{{ i.id }}">Record payment</button>
+            {% endif %}
+            {% if not i.payments %}
+            <form method="post" action="/admin/fees/instalments/{{ i.id }}/delete" data-confirm="Delete the instalment {{ i.title }}?">
+              {{ ui.csrf_field(csrf_token) }}<button class="icon-btn" type="submit" aria-label="Delete {{ i.title }}">{{ ui.icon('x') }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}{{ ui.empty('No instalments yet.', 'wallet') }}{% endif %}
+</section>
+
+<section class="panel">
+  <h3>Payments</h3>
+  {% if payments %}
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Receipt</th><th>Date</th><th>For</th><th class="num">Amount</th><th>Method</th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td><a href="/receipts/{{ p.id }}" class="tabular">{{ p.receipt_no }}</a></td>
+          <td>{{ p.paid_on|nice_date }}</td>
+          <td>{{ p.instalment.title }}</td>
+          <td class="num">{{ p.amount_paise|inr }}</td>
+          <td>{{ p.method }}{% if p.reference %}<br><span class="muted">{{ p.reference }}</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">No payments recorded yet.</p>{% endif %}
+</section>
+{% endblock %}
+
+{% block sheets %}
+{% call ui.sheet('sheet-student-fee', 'Add instalment for ' ~ u.full_name) %}
+<form method="post" action="/admin/fees/student/{{ student.id }}/instalments" data-busy-form>
+  {{ ui.csrf_field(csrf_token) }}
+  {{ ui.field('title', 'Title', required=True, extra={'maxlength': '80'}) }}
+  <div class="form-grid">
+    {{ ui.field('amount', 'Amount (₹)', type='number', required=True, extra={'min': '1', 'step': '0.01', 'inputmode': 'decimal'}) }}
+    {{ ui.field('due_date', 'Due date', type='date', value=today, required=True) }}
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">Add instalment</button>
+</form>
+{% endcall %}
+
+{% for i in unpaid %}
+{% call ui.sheet('sheet-pay-' ~ i.id, 'Record payment: ' ~ i.title) %}
+<form method="post" action="/admin/fees/instalments/{{ i.id }}/pay" data-busy-form data-payment-form>
+  {{ ui.csrf_field(csrf_token) }}
+  <p class="muted">Balance due: <strong>{{ i.balance_paise|inr }}</strong></p>
+  <div class="form-grid">
+    <div class="field">
+      <label for="amt-{{ i.id }}">Amount (₹)</label>
+      <input id="amt-{{ i.id }}" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" required
+             max="{{ '%.2f'|format(i.balance_paise / 100) }}" value="{{ '%.2f'|format(i.balance_paise / 100) }}">
+    </div>
+    <div class="field">
+      <label for="date-{{ i.id }}">Paid on</label>
+      <input id="date-{{ i.id }}" name="paid_on" type="date" value="{{ today }}" max="{{ today }}" required>
+    </div>
+  </div>
+  <div class="form-grid">
+    <div class="field">
+      <label for="method-{{ i.id }}">Method</label>
+      <select id="method-{{ i.id }}" name="method" required data-method-select>
+        {% for m in methods %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="ref-{{ i.id }}">Reference / UTR</label>
+      <input id="ref-{{ i.id }}" name="reference" maxlength="60" data-reference-input
+             placeholder="Required for UPI">
+    </div>
+  </div>
+  <div class="field">
+    <label for="note-{{ i.id }}">Note (optional)</label>
+    <input id="note-{{ i.id }}" name="note" maxlength="200">
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">{{ ui.icon('check') }}<span>Save and create receipt</span></button>
+</form>
+{% endcall %}
+{% endfor %}
+{% endblock %}

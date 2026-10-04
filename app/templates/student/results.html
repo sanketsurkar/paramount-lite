@@ -1,0 +1,29 @@
+{#- student/results.html - all published results + trend chart. -#}
+{% extends "base.html" %}
+{% block title %}Results · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-title"><h1>Results</h1></div>
+{% if history %}
+<section class="panel">
+  <h3>Progress</h3>
+  {{ ui.trend(chart) }}
+</section>
+<ul class="result-cards">
+  {% for exam, row, summary in history %}
+  <li>
+    <a class="panel result-card" href="/student/results/{{ exam.id }}">
+      <span class="result-main">
+        <strong>{{ exam.name }}</strong>
+        <span class="muted">{{ exam.exam_date|nice_date }}</span>
+      </span>
+      <span class="result-score">
+        <strong>{{ row.percent|num }}%</strong>
+        <span class="muted">Rank {{ row.rank }} of {{ summary.ranked_count }}</span>
+      </span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}{{ ui.empty('No results yet. They appear here when your teachers publish them.', 'chart') }}{% endif %}
+{% endblock %}

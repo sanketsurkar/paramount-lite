@@ -1,0 +1,41 @@
+{#- admin/promote.html - year-end promotion (type PROMOTE to confirm). -#}
+{% extends "base.html" %}
+{% block title %}Promote · {{ app_name }}{% endblock %}
+{% block page_title %}Year-end promotion{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h3>What happens</h3>
+  <p>Every active student moves up one class: Nursery to LKG, LKG to UKG, UKG to Class 1, and so on.
+     Class 12 students are marked <strong>passed out</strong>; they can still log in to see old results.</p>
+  <p>Students moving into Class 11 have no stream yet. Set it on their profile afterwards.
+     Exams, results and fees from earlier years are not changed.</p>
+</section>
+
+<section class="panel">
+  <h3>Preview</h3>
+  {% if preview %}
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>From</th><th>To</th><th class="num">Students</th></tr></thead>
+      <tbody>{% for r in preview %}<tr><td>{{ r.from }}</td><td>{{ r.to }}</td><td class="num">{{ r.count }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">There are no active students to promote.</p>{% endif %}
+</section>
+
+{% if preview %}
+<section class="panel danger-zone">
+  <h3>Promote all students</h3>
+  <p>This can't be undone automatically. Type <strong>PROMOTE</strong> to confirm.</p>
+  <form method="post" action="/admin/promote" class="inline-form" data-busy-form
+        data-confirm="Promote every active student now?">
+    {{ ui.csrf_field(csrf_token) }}
+    <label class="sr-only" for="confirm">Type PROMOTE</label>
+    <input id="confirm" name="confirm" required pattern="PROMOTE" autocomplete="off" autocapitalize="characters"
+           placeholder="PROMOTE">
+    <button type="submit" class="btn btn-danger">{{ ui.icon('arrow-up') }}<span>Promote</span></button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

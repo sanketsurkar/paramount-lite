@@ -1,199 +1,223 @@
-# The Paramount Academy app (paramount-lite)
+# The Paramount Academy App (`paramount-lite`)
 
-Installable mobile web app (PWA) for The Paramount Academy: course notes, exams and
-marks, results with progress charts, class leaderboards, fees with UPI and receipts,
-notices, and offline access for students.
+An installable mobile web app (PWA) for The Paramount Academy. Features include course notes, exams and marks, results with progress charts, class leaderboards, fees with UPI payments and receipts, notices, and offline access for students.
 
-**Stack:** Python 3.12+, FastAPI, SQLAlchemy 2.0, Jinja2 (server-rendered HTML), one
-CSS file, one JavaScript file, a service worker. No Node, no build step, no CDN.
+**Tech stack:** Python 3.12+, FastAPI, SQLAlchemy 2.0, Jinja2 (server-rendered HTML), one CSS file, one JavaScript file, and a service worker. No Node.js, build step, or CDN required.
 
 ---
 
-## 1. Run it on your laptop (Windows, PowerShell)
+## 1. Run It on Your Laptop (Windows / PowerShell)
+
+Open PowerShell in the project directory:
 
 ```powershell
 cd paramount-lite
-py  -m venv .venv
+py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python run.py
 ```
 
-If activation fails with "running scripts is disabled", run
-`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
+If virtual-environment activation fails with a message that script execution is disabled, run the following command once:
 
-On the first start the console prints the admin login:
-
-```
-====================================================
-  Admin account created
-  Login ID          : ADM-001
-  One-time password : k7m2xp
-====================================================
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
-Open http://127.0.0.1:8000, log in, and choose your own password.
+On the first start, the console prints the administrator login credentials.
 
-| Command | What it does |
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000), log in, and choose your own password.
+
+### Useful commands
+
+| Command | Purpose |
 |---|---|
-| `python run.py` | Start the app with auto-reload |
-| `python run.py --lan` | Also reachable from a phone on the same Wi-Fi (`http://<laptop-IP>:8000`) |
-| `python -m app.seed --reset-admin` | New one-time password for ADM-001 (if locked out) |
-| `python tests/smoke_test.py` | Quick login/security test (23 checks) |
-| `python tests/full_test.py` | Every feature as admin, teacher and student (79 checks) |
+| `python run.py` | Start the application with auto-reload |
+| `python run.py --lan` | Make the application accessible from a phone on the same Wi-Fi network |
+| `python -m app.seed --reset-admin` | Generate a new one-time password for `ADM-001` if locked out |
+| `python tests/smoke_test.py` | Run the quick login and security tests |
+| `python tests/full_test.py` | Run the full feature tests for admin, teacher, and student roles |
 
-Both tests use a temporary database, so your real data is never touched.
-To start again from an empty database, stop the server and delete the `instance` folder.
+The tests use a temporary database so that the real application data is not modified.
 
-## 2. First-day setup (as admin)
+To start again with an empty database, stop the server and delete the `instance` folder. **This permanently removes the local database stored there**, so back it up first if it contains data you need.
 
-1. **Settings**: academy name, address, phone, **UPI ID**, and which classes show a leaderboard.
-2. **Teachers**: add each teacher and tick their classes, or import from Excel.
-   You get a printable list of login IDs and one-time passwords.
-3. **Students**: add students or import them (Students > Import). The template is
-   downloadable from the import page.
-4. **Subjects**: every class starts with English, Mathematics and Science. Add more
-   (one subject can go to several classes at once) and set streams for Class 11-12.
-5. **Fees**: add an instalment for a whole class, then record payments as they come in.
+---
 
-## 3. What each role can do
+## 2. First-Day Setup (Administrator)
 
-| | Admin | Teacher | Student / parent |
+1. **Settings:** Configure the academy name, address, phone number, UPI ID, and which classes display a leaderboard.
+2. **Teachers:** Add teachers, assign their classes, or import teachers from Excel. Generate a printable list of login IDs and one-time passwords.
+3. **Students:** Add students individually or import them using the template available on the student import page.
+4. **Subjects:** Each class starts with English, Mathematics, and Science. Add more subjects as needed and configure streams for Classes 11–12.
+5. **Fees:** Create an instalment for a class and record payments as they arrive.
+
+---
+
+## 3. What Each Role Can Do
+
+| Feature | Administrator | Teacher | Student / Parent |
 |---|---|---|---|
-| Students | Add, edit, import, reset password, deactivate | View own classes | - |
-| Teachers | Add, edit, import, assign classes | - | - |
-| Subjects | Add, rename, reorder, copy, archive/restore | - | See own subjects |
-| Course notes | Manage all classes | Manage own classes | Open, save offline |
-| Exams & marks | Everything + publish/unpublish | Create, enter marks (own classes) | See published results |
-| Results & ranks | - | - | Marks, %, rank, remark, trend chart, leaderboard |
-| Fees | Instalments, payments, receipts | Never sees fees | See dues, pay by UPI, receipts |
-| Notices | To everyone or a class | To own classes | See notices |
-| Promote, audit log, settings | Yes | - | - |
+| Students | Add, edit, import, reset passwords, deactivate | View assigned classes | — |
+| Teachers | Add, edit, import, assign classes | — | — |
+| Subjects | Add, rename, reorder, copy, archive, restore | — | View assigned subjects |
+| Course notes | Manage all classes | Manage assigned classes | Open and save offline |
+| Exams and marks | Manage and publish/unpublish | Create exams and enter marks for assigned classes | View published results |
+| Results and ranks | — | — | View marks, percentage, rank, remarks, trends, and leaderboard |
+| Fees | Manage instalments, payments, and receipts | No access to fees | View dues, pay by UPI, view receipts |
+| Notices | Send to everyone or a class | Send to assigned classes | View notices |
+| Promotion, audit log, settings | Full access | — | — |
 
-### How results are calculated
+### How Results Are Calculated
 
-- **Percentage** = marks obtained / total maximum of the subjects that apply to the
-  student x 100. "AB" (absent) counts as 0.
-- **Ranks**: ties share a rank (1, 1, 3). Only students with marks are ranked.
-- **Leaderboard**: based on the latest published exam of the class. It shows the top 10,
-  plus "your rank", with names as "Aarav S.".
+- **Percentage:** Marks obtained divided by the total maximum marks of applicable subjects, multiplied by 100. An absent (`AB`) result counts as zero.
+- **Ranks:** Students with equal marks share a rank. For example, `1, 1, 3`. Only students with marks are ranked.
+- **Leaderboard:** Based on the latest published exam for the class. It displays the top 10 students and the current student's rank, with names displayed in a shortened format such as `Aarav S.`.
 
-## 4. Put it online for free (Phase 8)
+---
 
-The free setup uses three services. Free plans change, so check their current limits.
+## 4. Deploy Online for Free (Phase 8)
 
-| Piece | Service | Why |
+The proposed deployment uses three services. Free-plan limits and features can change, so verify the current terms before deployment.
+
+| Component | Service | Purpose |
 |---|---|---|
-| App | **Render** (free web service) | Runs `python run.py`, gives HTTPS |
-| Database | **Neon** (free PostgreSQL) | Render's own free database expires |
-| Files | **Supabase Storage** (free) | Render's disk is wiped on every restart |
+| Application | [Render](https://render.com/) | Hosts the Python application and provides HTTPS |
+| Database | [Neon](https://neon.tech/) | Provides PostgreSQL database hosting |
+| File storage | [Supabase Storage](https://supabase.com/) | Stores uploaded files persistently |
 
-**Steps:**
+### Deployment Steps
 
-1. **Neon**: create a project and copy the connection string
-   (`postgresql://...neon.tech/neondb?sslmode=require`).
-2. **Supabase**: create a project and a **private** bucket called `paramount-files`.
-   From Project Settings > API, copy the project URL and the `service_role` key.
-3. **GitHub**: push this folder to a private repository. `.gitignore` already
-   excludes `instance/` and `.env`.
-4. **Render**: choose New > Blueprint and pick the repository. `render.yaml` sets
-   everything up. Paste `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`
-   when asked.
-5. Open the Render **Logs** and copy the admin one-time password from the box. Then
-   open your `https://....onrender.com` address.
+1. **Neon:** Create a project and copy the PostgreSQL connection string. It typically resembles `postgresql://...neon.tech/neondb?sslmode=require`.
+2. **Supabase:** Create a project and a private bucket named `paramount-files`. Copy the project URL and service-role key from the project settings.
+3. **GitHub:** Push the project to a private repository. The `.gitignore` file should exclude `instance/` and `.env`.
+4. **Render:** Create a new Blueprint and select the repository. If the project contains a valid `render.yaml`, Render can use it to configure the service. Provide the required environment variables, including `DATABASE_URL`, `SUPABASE_URL`, and `SUPABASE_SERVICE_KEY`.
+5. **Verify deployment:** Review the Render logs and application health. Complete the initial administrator setup using the deployment's documented credential-generation process.
 
-**Things to know about the free tier:**
-- **Cold starts.** The app sleeps after about 15 minutes without visitors, and the
-  next visit takes 30-60 seconds. A free uptime pinger (for example
-  cron-job.org) calling `/healthz` every 10 minutes keeps it awake during school hours.
-- **Production checks.** In production (`APP_ENV=production`) the app refuses to start
-  without a strong `SECRET_KEY`, PostgreSQL and Supabase. This is deliberate.
-- **Backups.** Neon keeps a short restore history on the free plan. Also export your
-  data regularly.
+**Security:** Never commit `.env` files, database passwords, service-role keys, secret keys, or real administrator passwords to GitHub. Store deployment secrets in Render's environment settings.
+
+### Free-Tier Considerations
+
+- **Cold starts:** Free web services may sleep after inactivity. The first request may take longer while the service starts.
+- **Production configuration:** The application is expected to require a strong `SECRET_KEY`, PostgreSQL, and Supabase when `APP_ENV=production`.
+- **Backups:** Check your database provider's backup and restore capabilities, and export important data regularly.
+- **Persistent files:** Verify that uploads are stored in Supabase rather than temporary local storage after deployment.
+
+---
 
 ## 5. Android and iPhone
 
-- **Android APK.** Open https://www.pwabuilder.com, enter your live URL, then choose
-  Package for Android. You get a signed APK to share directly; publishing on
-  Google Play costs a one-time developer fee. The APK opens your live site
-  full-screen, so updates need no new APK.
-- **iPhone.** Open the site in Safari, tap Share, then **Add to Home Screen**. It runs
-  full-screen with offline support. An App Store version would need an Apple Developer
-  account and a Mac.
-- **Android browser.** Chrome shows an "Install app" button in the top bar.
+- **Android APK:** Visit [PWABuilder](https://www.pwabuilder.com/), enter the deployed URL, and review the Android packaging options. Signing and distribution requirements may apply.
+- **iPhone:** Open the deployed website in Safari, tap **Share**, and select **Add to Home Screen**.
+- **Android browser:** Chrome may offer an **Install app** option for a compatible PWA.
 
-## 6. Offline (students)
+A home-screen installation opens the web app like an application. Updates to the hosted website generally do not require reinstalling it, although cached resources may need refreshing.
 
-- Pages a student has opened recently (home, results, ranks, fees, notes lists) still
-  open without internet. Pages never opened show an "You're offline" page.
-- "Save offline" on a note keeps the PDF/image on the phone. The saved files are listed
-  under Courses > Saved on this phone.
-- **Logout** removes all saved pages and files from the phone (important on shared phones).
-- Staff pages are never cached.
+---
 
-## 7. Security summary
+## 6. Offline Access for Students
 
-- Passwords are hashed with PBKDF2-SHA256 (600,000 iterations).
-- One-time passwords must be changed at first login. New passwords need 8+ characters
-  with letters and numbers.
-- Login is limited to 5 failed attempts per ID per minute.
-- Changing or resetting a password logs that account out on every device.
-- The session is a signed cookie: HttpOnly, SameSite=Lax, and Secure in production.
-- Every POST carries a CSRF token. The Content Security Policy allows only the app's
-  own scripts and styles, with no inline code.
-- Uploads are checked by their real file signature (PDF/JPG/PNG/WEBP), not the file
-  name, and limited to 10 MB. Files are served only to users allowed to see them.
-- The audit log records changes to marks, fees, passwords, subjects, people, promotion
-  and settings.
+- Recently opened student pages, including home, results, ranks, fees, and notes lists, may remain available offline.
+- Pages that were never cached display an offline page when there is no connection.
+- The **Save offline** option stores supported note files on the device.
+- Saved files are listed under **Courses → Saved on this phone**.
+- Logging out removes saved pages and files from the device, according to the application's offline-storage implementation.
+- Staff pages are not cached.
 
-## 8. Known limits (by design, for a single small server)
+Offline functionality depends on the service worker, browser support, and which resources have already been cached.
 
-- **In-memory state.** The login rate limit and the 15-minute one-time password lists
-  live in server memory. This is fine for one server process (the free plan); they
-  reset on restart.
-- **No migrations.** Tables are created with `create_all`. If a future change adds
-  columns, it will come with a small upgrade script.
-- **Supabase not tested here.** The Supabase storage code follows Supabase's REST API but
-  was not tested against a live project during development. Upload one file after
-  deploying to confirm your keys.
+---
 
-## 9. Project layout
+## 7. Security Summary
 
-```
+The application is designed with the following security measures:
+
+- Password hashing using PBKDF2-SHA256 with 600,000 iterations.
+- One-time passwords that must be changed at first login.
+- Password requirements of at least eight characters, including letters and numbers.
+- Rate limiting for repeated failed login attempts.
+- Password changes and resets that invalidate existing sessions.
+- Signed session cookies using `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
+- CSRF protection for POST requests.
+- A Content Security Policy restricting scripts and styles to the application's own resources.
+- File-upload validation based on file signatures, with supported formats and a 10 MB size limit.
+- Access controls for uploaded files.
+- Audit logging for sensitive changes involving marks, fees, passwords, subjects, people, promotion, and settings.
+
+Review and test these controls in the deployed environment before using real student or payment data.
+
+---
+
+## 8. Known Limitations
+
+- **In-memory state:** Login rate limits and temporary one-time-password tracking are held in server memory and reset when the process restarts.
+- **Database migrations:** Tables are created using SQLAlchemy's `create_all`. Schema changes may require explicit upgrade scripts.
+- **Supabase integration:** Test file uploads, downloads, permissions, and error handling against a real Supabase project before production use.
+- **Single-server design:** In-memory controls may not be shared between multiple application workers.
+- **Offline limitations:** Not every page or action is available without an internet connection.
+
+---
+
+## 9. Project Layout
+
+```text
 paramount-lite/
-  run.py                    start the server (also used by Render)
-  requirements.txt  render.yaml  .env.example
-  app/
-    main.py                 app setup, security headers (CSP), error pages, PWA files
-    config.py               settings + constants (classes, rules, dates)
-    db.py  models.py        database engine, sessions, all 16 tables
-    security.py             password hashing, one-time passwords, CSRF, rate limit
-    deps.py                 login/role checks used by routes
-    services.py             business rules (results, ranks, fees, import, promote...)
-    storage.py              note files: local disk or Supabase Storage
-    qr.py                   UPI QR code generator (pure Python, no packages)
-    templating.py           render(), toasts, navigation, filters (rupees, dates)
-    seed.py                 first-run data (admin, settings, default subjects)
-    routes/                 every file with a `router` is loaded automatically
-      auth.py               login, logout, change password
-      admin.py              dashboard, settings, audit log
-      admin_people.py       students, teachers, import, passwords, promote
-      admin_subjects.py     subjects
-      admin_fees.py         fees, payments, receipts
-      staff.py              teacher home, student list/profile, notices
-      notes.py              course notes + file download
-      exams.py              exams, marks grid autosave, publish
-      student.py            all student pages
-    templates/              Jinja2 pages: base.html (layout), macros.html (UI parts)
-    static/                 app.css, app.js, theme.js, sw.js, manifest, offline.html, icons
-  tests/smoke_test.py  tests/full_test.py
+├── run.py
+├── requirements.txt
+├── render.yaml
+├── .env.example
+├── app/
+│   ├── main.py
+│   ├── config.py
+│   ├── db.py
+│   ├── models.py
+│   ├── security.py
+│   ├── deps.py
+│   ├── services.py
+│   ├── storage.py
+│   ├── qr.py
+│   ├── templating.py
+│   ├── seed.py
+│   ├── routes/
+│   │   ├── auth.py
+│   │   ├── admin.py
+│   │   ├── admin_people.py
+│   │   ├── admin_subjects.py
+│   │   ├── admin_fees.py
+│   │   ├── staff.py
+│   │   ├── notes.py
+│   │   ├── exams.py
+│   │   └── student.py
+│   ├── templates/
+│   │   ├── base.html
+│   │   └── macros.html
+│   └── static/
+│       ├── app.css
+│       ├── app.js
+│       ├── theme.js
+│       ├── sw.js
+│       ├── manifest
+│       ├── offline.html
+│       └── icons/
+└── tests/
+    ├── smoke_test.py
+    └── full_test.py
 ```
 
-**Notes for a .NET developer:**
-- **`routes/*.py`** are the controllers. `services.py` is the service layer.
-- **`models.py`** holds the EF-style entities. A `Session` from `deps.DbSession` is the `DbContext`.
-- **Dependencies** like `AdminUser` and `StaffUser` in function parameters work like
-  `[Authorize(Roles=...)]`.
-- **`render()`** returns a view; `redirect()` is `RedirectToAction` plus TempData (toast).
-- **No inline JavaScript.** Templates add `data-*` attributes and `app.js` attaches
-  the behaviour. That's why the strict CSP works.
+---
+
+## Notes for .NET Developers
+
+- `routes/*.py` serve a role similar to ASP.NET Core controllers.
+- `services.py` contains application and business logic.
+- `models.py` contains SQLAlchemy ORM models, similar in purpose to Entity Framework entities.
+- `deps.py` provides dependencies such as database sessions and role checks.
+- A database `Session` is conceptually similar to an Entity Framework `DbContext`, although their lifecycles and APIs differ.
+- `render()` returns a server-rendered view, similar in purpose to returning a view from an MVC controller.
+- Templates use `data-*` attributes, and `app.js` attaches client-side behavior instead of relying on inline JavaScript. This supports the application's strict Content Security Policy.
+
+---
+
+## License and Contributions
+
+Add your chosen license and contribution guidelines before distributing the project publicly.

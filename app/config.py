@@ -104,7 +104,7 @@ def load_settings() -> Settings:
     default_db = "sqlite:///" + (INSTANCE_DIR / "paramount.db").as_posix()
 
     s = Settings(
-        app_name=_env("APP_NAME", "The Paramount Academy"),
+        app_name=_env("APP_NAME", "The Paramounts Academy"),
         env=env,
         secret_key=_env("SECRET_KEY", "dev-only-insecure-key-change-me"),
         database_url=_normalise_db_url(_env("DATABASE_URL", default_db)),
@@ -199,13 +199,13 @@ RECEIPT_PREFIX = "RCPT"           # RCPT-2026-0001
 # Values copied into the `settings` table on first run (admin can edit later).
 # These are DUMMY details - replace before going live.
 DEFAULT_SETTINGS: dict[str, str] = {
-    "academy.name": "The Paramount Academy",
-    "academy.tagline": "Excellence in every step",
-    "academy.address": "12 Knowledge Park, Sector 5, New Delhi 110001",
-    "academy.phone": "+91 98765 43210",
-    "academy.email": "info@paramountacademy.example",
-    "upi.id": "paramountacademy@upi",
-    "upi.payee": "The Paramount Academy",
+    "academy.name": "The Paramounts Academy",
+    "academy.tagline": "Of the Students, By the Students, For the Students",
+    "academy.address": "Kotewada , Nagpur, Maharashtra",
+    "academy.phone": "+91 9921553781",
+    "academy.email": "info@paramountsacademy@gmail.com",
+    "upi.id": "paramountsacademy@upi",
+    "upi.payee": "The Paramounts Academy",
 }
 
 # ---------------------------------------------------------------------------

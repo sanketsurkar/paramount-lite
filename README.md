@@ -13,7 +13,7 @@ CSS file, one JavaScript file, a service worker. No Node, no build step, no CDN.
 
 ```powershell
 cd paramount-lite
-py -3.12 -m venv .venv
+py  -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python run.py
